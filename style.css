@@ -117,13 +117,6 @@ body {
   gap: 10px;
 }
 
-/* Компактные поля только на странице логина */
-.login-form .input {
-  height: 38px;           /* фиксированная адекватная высота */
-  padding: 6px 12px;
-  border-radius: 999px;
-}
-
 
 .login-label {
   font-size: 12px;
@@ -131,6 +124,13 @@ body {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+/* Компактные поля только на странице логина */
+.login-form .input {
+  height: 38px;           /* фиксированная адекватная высота */
+  padding: 6px 12px;
+  border-radius: 999px;
 }
 
 .input {
