@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Личный кабинет · MiniApp Analytics</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="layout">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar__brand">
+        <div class="brand-logo">
+          <img src="logo.png" alt="Правильный учёт" />
+        </div>
+        <div>
+          <div class="brand-text-main">Правильный учёт</div>
+          <div class="brand-text-sub">MiniApp · Analytics</div>
+        </div>
+      </div>
+
+      <div class="sidebar__client">
+        <div class="sidebar__client-title">Текущий клиент</div>
+        <div class="sidebar__client-name" id="sidebarShopName">Магазин «Шмель на Тверской»</div>
+        <div class="sidebar__client-note" id="sidebarShopNote">Старт мини-аппа: 05.11.2025</div>
+      </div>
+
+      <nav class="sidebar__nav">
+        <div class="nav-item nav-item--active" data-view="dashboard">
+          <span class="nav-dot"></span>
+          <span>Дашборд</span>
+        </div>
+        <div class="nav-item" data-view="sales">
+          <span class="nav-dot"></span>
+          <span>Продажи</span>
+        </div>
+        <div class="nav-item" data-view="clients">
+          <span class="nav-dot"></span>
+          <span>Клиенты</span>
+        </div>
+        <div class="nav-item" data-view="gamification">
+          <span class="nav-dot"></span>
+          <span>Геймификация</span>
+        </div>
+        <div class="nav-item" data-view="promos">
+          <span class="nav-dot"></span>
+          <span>Акции и промо</span>
+        </div>
+        <div class="nav-item" data-view="settings">
+          <span class="nav-dot"></span>
+          <span>Настройки магазина</span>
+        </div>
+      </nav>
+
+      <div class="sidebar__footer">
+        <div class="sidebar__footer-row">
+          <span>ID магазина</span>
+          <span id="sidebarShopId">#shop_00127</span>
+        </div>
+        <div class="sidebar__footer-row">
+          <span>Тариф</span>
+          <span id="sidebarPlan">Pro · ежемесячно</span>
+        </div>
+        <div class="sidebar__badge">
+          <span class="sidebar__badge-dot"></span>
+          <span id="sidebarUpdateInfo">Данные обновляются каждые 5 минут</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+      <!-- HEADER -->
+      <header class="header">
+        <div class="header__titles">
+          <div class="header__title">Дашборд мини-аппа</div>
+          <div class="header__subtitle">
+            Видно, как мини-апп увеличивает выручку, средний чек и повторные покупки.
+          </div>
+        </div>
+        <div class="header__controls">
+          <div class="period-switch">
+            <button class="period-switch__btn period-switch__btn--active" data-period="30d">30 дней</button>
+            <button class="period-switch__btn" data-period="7d">7 дней</button>
+            <button class="period-switch__btn" data-period="today">Сегодня</button>
+          </div>
+          <div class="header__profile">
+            <div class="header__avatar" id="headerAvatar">IP</div>
+            <div>
+              <div id="headerOwnerName">Иван Петров</div>
+              <div style="font-size:10px; color:var(--text-muted);" id="headerOwnerRole">
+                Владелец магазина
+              </div>
+            </div>
+            <button class="btn btn--ghost btn--xs" id="logoutBtn">Выйти</button>
+          </div>
+        </div>
+      </header>
+
+      <!-- VIEW: DASHBOARD -->
+      <div class="view view--active" data-view="dashboard">
+        <!-- KPI CARDS -->
+        <section class="kpi-grid" id="dashboardKpis">
+          <!-- KPI 1 -->
+          <article class="card">
+            <div class="card__inner">
+              <div class="card__label">Выручка от клиентов мини-аппа</div>
+              <div class="card__value">
+                <span id="kpiRevenueValue">0&nbsp;₽</span>
+                <span class="card__value-sub">за выбранный период</span>
+              </div>
+              <div class="card__hint">
+                <span id="kpiRevenueShare">0%</span> общей выручки магазина
+              </div>
+              <div class="card__delta" id="kpiRevenueDelta">
+                ▲ 0% к предыдущему периоду
+              </div>
+            </div>
+          </article>
+
+          <!-- KPI 2 -->
+          <article class="card">
+            <div class="card__inner">
+              <div class="card__label">Чеки от клиентов мини-аппа</div>
+              <div class="card__value">
+                <span id="kpiChecksValue">0</span>
+                <span class="card__value-sub">чеков</span>
+              </div>
+              <div class="card__hint">
+                <span id="kpiChecksShare">0%</span> всех чеков магазина
+              </div>
+              <div class="card__separator"></div>
+              <div class="card__pair-row">
+                <span id="kpiChecksDeltaCount">+0 чеков</span>
+                <span id="kpiChecksDeltaText">по сравнению с прошлым периодом</span>
+              </div>
+            </div>
+          </article>
+
+          <!-- KPI 3 -->
+          <article class="card">
+            <div class="card__inner">
+              <div class="card__label">Средний чек</div>
+              <div class="card__value">
+                <span id="kpiAvgCheckMini">0&nbsp;₽</span>
+                <span class="card__value-sub">mini-app</span>
+              </div>
+              <div class="card__pair-row" style="margin-bottom:6px;">
+                <span class="card__hint">Остальные клиенты</span>
+                <span class="card__hint" id="kpiAvgCheckAll">0&nbsp;₽</span>
+              </div>
+              <div class="card__delta" id="kpiAvgCheckDelta">
+                ▲ 0% выше обычного
+              </div>
+            </div>
+          </article>
+
+          <!-- KPI 4 -->
+          <article class="card">
+            <div class="card__inner">
+              <div class="card__label">Повторные покупки</div>
+              <div class="card__value">
+                <span id="kpiRepeatShare">0%</span>
+                <span class="card__value-sub">клиентов mini-app</span>
+              </div>
+              <div class="card__hint">
+                Совершили 2+ покупки за период
+              </div>
+              <div class="card__separator"></div>
+              <div class="card__pair-row">
+                <span>Остальные клиенты</span>
+                <span id="kpiRepeatOthers">0%</span>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <!-- MAIN GRID: SALES + ACTIVITY -->
+        <section class="grid-main">
+          <!-- SALES PANEL -->
+          <section class="panel">
+            <div class="panel__inner">
+              <div class="panel__header">
+                <div>
+                  <div class="panel__title">Динамика выручки mini-app</div>
+                  <div class="panel__subtitle">
+                    Сравнение выручки от клиентов mini-app и остальных клиентов.
+                  </div>
+                </div>
+                <div class="panel__tags">
+                  <span class="chip chip--active">Выручка</span>
+                  <span class="chip">Чеки</span>
+                  <span class="chip">Средний чек</span>
+                </div>
+              </div>
+              <div class="chart-placeholder" id="chartRevenue">
+                Здесь будет график (дата → выручка mini-app / выручка всех клиентов)
+              </div>
+              <div class="panel__footer-row">
+                <span>Выручка mini-app: <b id="summaryRevenueMini">0&nbsp;₽</b></span>
+                <span>Выручка всех клиентов: <b id="summaryRevenueAll">0&nbsp;₽</b></span>
+                <span>Доля mini-app: <b id="summaryRevenueShare">0%</b></span>
+              </div>
+            </div>
+          </section>
+
+          <!-- ACTIVITY FEED PANEL -->
+          <section class="panel">
+            <div class="panel__inner">
+              <div class="panel__header">
+                <div>
+                  <div class="panel__title">Что происходит сейчас</div>
+                  <div class="panel__subtitle">
+                    Живая лента действий клиентов мини-аппа.
+                  </div>
+                </div>
+                <span class="pill">
+                  <span class="pill__dot"></span>
+                  реальное время
+                </span>
+              </div>
+              <ul class="feed-list" id="activityFeed">
+                <!-- DEMO / PLACEHOLDER -->
+                <li class="feed-item">
+                  <div class="feed-item__time">Сегодня · 18:32</div>
+                  <div class="feed-item__text">
+                    Клиент <span class="feed-item__accent">@beerlover</span> выиграл приз
+                    «Фисташки» и забрал его в магазине.
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </section>
+        </section>
+
+        <!-- CLIENTS + LOYALTY -->
+        <section class="two-col">
+          <!-- CLIENTS -->
+          <section class="panel">
+            <div class="panel__inner">
+              <div class="panel__header">
+                <div>
+                  <div class="panel__title">Клиенты мини-аппа</div>
+                  <div class="panel__subtitle">
+                    Сколько новых и активных клиентов приходит через mini-app.
+                  </div>
+                </div>
+              </div>
+              <div class="stat-list">
+                <div class="stat-list__row">
+                  <span class="stat-list__label">Новых за период</span>
+                  <span class="stat-list__value" id="clientsNew">0 клиентов</span>
+                </div>
+                <div class="stat-list__row">
+                  <span class="stat-list__label">Активных за период</span>
+                  <span class="stat-list__value" id="clientsActive">0 клиентов</span>
+                </div>
+                <div class="stat-list__row">
+                  <span class="stat-list__label">Всего пользователей mini-app</span>
+                  <span class="stat-list__value" id="clientsTotal">0</span>
+                </div>
+              </div>
+              <div class="chart-placeholder" style="margin-top:8px;" id="chartNewClients">
+                Мини-график: новые пользователи mini-app по дням
+              </div>
+            </div>
+          </section>
+
+          <!-- LOYALTY -->
+          <section class="panel">
+            <div class="panel__inner">
+              <div class="panel__header">
+                <div>
+                  <div class="panel__title">Лояльность и возвраты</div>
+                  <div class="panel__subtitle">
+                    Как часто клиенты mini-app возвращаются за повторной покупкой.
+                  </div>
+                </div>
+              </div>
+              <div class="stat-list">
+                <div class="stat-list__row">
+                  <span class="stat-list__label">Сделали 2+ покупки</span>
+                  <span class="stat-list__value" id="retention2plus">
+                    0%
+                    <span class="stat-list__badge" id="retention2plusComment"></span>
+                  </span>
+                </div>
+                <div class="stat-list__row">
+                  <span class="stat-list__label">Сделали 3+ покупки</span>
+                  <span class="stat-list__value" id="retention3plus">0%</span>
+                </div>
+                <div class="stat-list__row">
+                  <span class="stat-list__label">Средний срок до повторной покупки</span>
+                  <span class="stat-list__value" id="retentionAvgDays">–</span>
+                </div>
+              </div>
+              <div class="chart-placeholder" style="margin-top:8px;" id="chartRetention">
+                Мини-график: конверсия в повторную покупку по неделям
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <!-- GAMIFICATION + PROMO -->
+        <section class="two-col">
+          <!-- GAMIFICATION -->
+          <section class="panel">
+            <div class="panel__inner">
+              <div class="panel__header">
+                <div>
+                  <div class="panel__title">Геймификация: колесо и штампы</div>
+                  <div class="panel__subtitle">
+                    Как мини-игры и паспорт стилей влияют на выручку.
+                  </div>
+                </div>
+                <span class="pill">
+                  🎮 вовлечённость
+                </span>
+              </div>
+              <div class="stat-list">
+                <div class="stat-list__row">
+                  <span class="stat-list__label">Вращений колеса за период</span>
+                  <span class="stat-list__value" id="gameSpins">0</span>
+                </div>
+                <div class="stat-list__row">
+                  <span class="stat-list__label">Уникальных игроков</span>
+                  <span class="stat-list__value" id="gamePlayers">0</span>
+                </div>
+                <div class="stat-list__row">
+                  <span class="stat-list__label">Средний чек игроков</span>
+                  <span class="stat-list__value" id="gameAvgCheckPlayers">0&nbsp;₽</span>
+                </div>
+                <div class="stat-list__row">
+                  <span class="stat-list__label">Средний чек без игр</span>
+                  <span class="stat-list__value" id="gameAvgCheckOthers">0&nbsp;₽</span>
+                </div>
+              </div>
+              <div class="panel__footer-row" style="margin-top:8px;">
+                <span id="gameFooterText">Игроки оставляют в среднем на 0 ₽ больше.</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- PROMO TABLE (SUMMARY) -->
+          <section class="panel">
+            <div class="panel__inner">
+              <div class="panel__header">
+                <div>
+                  <div class="panel__title">Акции и промо через mini-app</div>
+                  <div class="panel__subtitle">
+                    Какие кампании приносят больше выручки.
+                  </div>
+                </div>
+              </div>
+              <div style="overflow-x:auto;">
+                <table class="table" id="promoTable">
+                  <thead>
+                    <tr>
+                      <th>Акция</th>
+                      <th>Период</th>
+                      <th>Чеки</th>
+                      <th>Выручка</th>
+                      <th>Средний чек</th>
+                      <th>Статус</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <!-- demo rows, будут заменены данными -->
+                  </tbody>
+                </table>
+              </div>
+              <div class="panel__footer-row" style="margin-top:6px;">
+                <span>Через промо-акции mini-app: <b id="promoChecksTotal">0 чеков</b></span>
+                <span>Выручка по промо: <b id="promoRevenueTotal">0&nbsp;₽</b></span>
+              </div>
+            </div>
+          </section>
+        </section>
+      </div>
+
+      <!-- VIEW: SALES -->
+      <div class="view" data-view="sales">
+        <section class="panel">
+          <div class="panel__inner">
+            <div class="panel__header">
+              <div>
+                <div class="panel__title">Продажи в разрезе каналов</div>
+                <div class="panel__subtitle">
+                  Подробная аналитика выручки, чеков и среднего чека по mini-app и другим каналам.
+                </div>
+              </div>
+            </div>
+            <div class="chart-placeholder" id="salesOverviewChart">
+              Здесь будет детальный график/диаграммы по продажам (по дням, по каналам, по категориям).
+            </div>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="panel__inner">
+            <div class="panel__header">
+              <div>
+                <div class="panel__title">Топ-товары для пользователей mini-app</div>
+                <div class="panel__subtitle">
+                  Какие позиции чаще всего покупают клиенты, пришедшие через mini-app.
+                </div>
+              </div>
+            </div>
+            <div class="chart-placeholder" id="salesTopProducts">
+              Таблица / график: топ позиций по выручке и количеству чеков среди пользователей mini-app.
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- VIEW: CLIENTS -->
+      <div class="view" data-view="clients">
+        <section class="panel">
+          <div class="panel__inner">
+            <div class="panel__header">
+              <div>
+                <div class="panel__title">Портрет клиентов mini-app</div>
+                <div class="panel__subtitle">
+                  Новые, активные, возвращающиеся клиенты, сегменты, источники входа.
+                </div>
+              </div>
+            </div>
+            <div class="chart-placeholder" id="clientsSegments">
+              Здесь будет сегментация клиентов: новые / постоянные / уснувшие, источники (QR, доставка, соцсети).
+            </div>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="panel__inner">
+            <div class="panel__header">
+              <div>
+                <div class="panel__title">Retention и повторные покупки</div>
+                <div class="panel__subtitle">
+                  Как быстро и как часто клиенты возвращаются после первой покупки.
+                </div>
+              </div>
+            </div>
+            <div class="chart-placeholder" id="clientsRetentionDetail">
+              График удержания (D1, D7, D30) и количество клиентов с 2+ / 3+ покупками.
+            </div>
+          </div>
+        </section>
+
+        <!-- ПОИСК КОНКРЕТНОГО КЛИЕНТА -->
+        <section class="panel">
+          <div class="panel__inner">
+            <div class="panel__header">
+              <div>
+                <div class="panel__title">Конкретный клиент mini-app</div>
+                <div class="panel__subtitle">
+                  Быстрый просмотр статистики по одному пользователю: чеки, игры, штампы.
+                </div>
+              </div>
+            </div>
+
+            <div class="client-search-row">
+              <input
+                type="text"
+                class="input"
+                id="clientSearchInput"
+                placeholder="@username, ID или телефон"
+              />
+              <button class="btn" id="clientSearchBtn">Показать</button>
+            </div>
+
+            <div class="client-card" id="clientCard" data-empty="true">
+              <div class="client-card__header">
+                <div>
+                  <div class="client-card__name" id="clientCardName">Имя клиента</div>
+                  <div class="client-card__id" id="clientCardId">@username · ID</div>
+                </div>
+                <div class="client-card__badge" id="clientCardStatus">активен</div>
+              </div>
+
+              <div class="client-card__grid">
+                <div class="client-card__item">
+                  <div class="client-card__label">Всего чеков</div>
+                  <div class="client-card__value" id="clientCardChecks">0</div>
+                </div>
+                <div class="client-card__item">
+                  <div class="client-card__label">Суммарная выручка</div>
+                  <div class="client-card__value" id="clientCardRevenue">0&nbsp;₽</div>
+                </div>
+                <div class="client-card__item">
+                  <div class="client-card__label">Последний визит</div>
+                  <div class="client-card__value" id="clientCardLastVisit">–</div>
+                </div>
+                <div class="client-card__item">
+                  <div class="client-card__label">Игры / колесо</div>
+                  <div class="client-card__value" id="clientCardGames">0 вращений</div>
+                </div>
+                <div class="client-card__item">
+                  <div class="client-card__label">Собрано штампов</div>
+                  <div class="client-card__value" id="clientCardStamps">0 / 0</div>
+                </div>
+                <div class="client-card__item">
+                  <div class="client-card__label">Монеты на балансе</div>
+                  <div class="client-card__value" id="clientCardCoins">0</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- VIEW: GAMIFICATION -->
+      <div class="view" data-view="gamification">
+        <section class="panel">
+          <div class="panel__inner">
+            <div class="panel__header">
+              <div>
+                <div class="panel__title">Колесо, штампы и мини-игры</div>
+                <div class="panel__subtitle">
+                  Как геймификация влияет на выручку, средний чек и частоту покупок.
+                </div>
+              </div>
+            </div>
+            <div class="chart-placeholder" id="gamificationOverview">
+              Здесь будет статистика по участиям в играх, выданным штампам, влиянию на средний чек.
+            </div>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="panel__inner">
+            <div class="panel__header">
+              <div>
+                <div class="panel__title">Паспорт стилей</div>
+                <div class="panel__subtitle">
+                  Сколько клиентов начали собирать паспорт, сколько завершили, как это влияет на ЛТВ.
+                </div>
+              </div>
+            </div>
+            <div class="chart-placeholder" id="gamificationStyles">
+              Диаграмма: % клиентов с 1+ штампом, полностью собравшие паспорт, динамика по неделям.
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- VIEW: PROMOS -->
+      <div class="view" data-view="promos">
+        <section class="panel">
+          <div class="panel__inner">
+            <div class="panel__header">
+              <div>
+                <div class="panel__title">Эффективность акций и промо</div>
+                <div class="panel__subtitle">
+                  Сравнение кампаний по количеству чеков, выручке и среднему чеку.
+                </div>
+              </div>
+            </div>
+            <div style="overflow-x:auto;">
+              <table class="table" id="promoTableFull">
+                <thead>
+                  <tr>
+                    <th>Акция</th>
+                    <th>Период</th>
+                    <th>Чеки</th>
+                    <th>Выручка</th>
+                    <th>Средний чек</th>
+                    <th>Статус</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- будут подставлены реальные/демо данные -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="panel__inner">
+            <div class="panel__header">
+              <div>
+                <div class="panel__title">Рассылки и кампании</div>
+                <div class="panel__subtitle">
+                  Конверсии из пушей/рассылок mini-app в реальные чеки и выручку.
+                </div>
+              </div>
+            </div>
+            <div class="chart-placeholder" id="promosCampaigns">
+              Здесь будет обзор по рассылкам: сколько отправлено, открытий, переходов, чеков и выручки.
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- VIEW: SETTINGS -->
+      <div class="view" data-view="settings">
+        <section class="panel">
+          <div class="panel__inner">
+            <div class="panel__header">
+              <div>
+                <div class="panel__title">Настройки магазина</div>
+                <div class="panel__subtitle">
+                  Основная информация, геймификация и безопасность выдачи призов.
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-grid">
+              <!-- Блок: общая информация -->
+              <div class="settings-block">
+                <div class="settings-block__title">Общая информация</div>
+                <div class="settings-form-row">
+                  <label class="settings-label">Название магазина</label>
+                  <input class="input" type="text" id="settingShopName" />
+                </div>
+                <div class="settings-form-row">
+                  <label class="settings-label">ID магазина</label>
+                  <input class="input" type="text" id="settingShopId" disabled />
+                </div>
+                <div class="settings-form-row">
+                  <label class="settings-label">Период обновления данных</label>
+                  <select class="input" id="settingUpdatePeriod">
+                    <option value="5m">каждые 5 минут</option>
+                    <option value="15m">каждые 15 минут</option>
+                    <option value="60m">каждый час</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Блок: колесо и лимиты -->
+              <div class="settings-block">
+                <div class="settings-block__title">Колесо и призы</div>
+                <div class="settings-form-row">
+                  <label class="settings-label">Максимум вращений в день на клиента</label>
+                  <input class="input" type="number" id="settingMaxSpinsPerDay" min="0" />
+                </div>
+                <div class="settings-form-row">
+                  <label class="settings-label">Лимит призов в день (всего)</label>
+                  <input class="input" type="number" id="settingMaxPrizesPerDay" min="0" />
+                </div>
+                <div class="settings-form-row">
+                  <label class="settings-label">Учитывать только чеки от 500 ₽</label>
+                  <label class="switch">
+                    <input type="checkbox" id="settingMinCheckEnabled" />
+                    <span class="switch__slider"></span>
+                  </label>
+                </div>
+                <div class="settings-form-row">
+                  <label class="settings-label">Разрешённые призы</label>
+                  <div class="settings-tags" id="settingPrizesList">
+                    <!-- чекбоксы призов будут подставлены из API -->
+                  </div>
+                </div>
+              </div>
+
+              <!-- Блок: ПИН и доступ -->
+              <div class="settings-block">
+                <div class="settings-block__title">ПИН и сотрудники</div>
+                <div class="settings-form-row">
+                  <label class="settings-label">ПИН для выдачи призов и штампов</label>
+                  <input class="input" type="password" id="settingPin" placeholder="••••" />
+                </div>
+                <div class="settings-form-row">
+                  <label class="settings-label">Список сотрудников с доступом</label>
+                  <textarea
+                    class="input"
+                    rows="3"
+                    id="settingStaff"
+                    placeholder="@barmen1 · бар, @barmen2 · бар, @courier1 · доставка"
+                  ></textarea>
+                </div>
+                <div class="settings-form-row">
+                  <label class="settings-label">Ограничить выдачу призов в смену</label>
+                  <label class="switch">
+                    <input type="checkbox" id="settingLimitPerShift" />
+                    <span class="switch__slider"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top:12px; display:flex; justify-content:flex-end; gap:8px; flex-wrap:wrap;">
+              <button class="btn btn--ghost" id="settingsResetBtn">Отменить изменения</button>
+              <button class="btn" id="settingsSaveBtn">Сохранить настройки</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    // --- init ---
+    document.addEventListener("DOMContentLoaded", async function () {
+      // Проверяем авторизацию (если не DEMO_MODE)
+      if (!API.DEMO_MODE && !API.isLoggedIn()) {
+        window.location.href = "index.html";
+        return;
+      }
+
+      const navItems = document.querySelectorAll(".nav-item[data-view]");
+      const views = document.querySelectorAll(".view[data-view]");
+      const headerTitle = document.querySelector(".header__title");
+      const headerSubtitle = document.querySelector(".header__subtitle");
+
+      const viewMeta = {
+        dashboard: {
+          title: "Дашборд мини-аппа",
+          subtitle: "Видно, как мини-апп увеличивает выручку, средний чек и повторные покупки.",
+        },
+        sales: {
+          title: "Продажи",
+          subtitle: "Детализация выручки, чеков и среднего чека по mini-app и другим каналам.",
+        },
+        clients: {
+          title: "Клиенты",
+          subtitle: "Новые, активные и возвращающиеся клиенты mini-app, источники и сегменты.",
+        },
+        gamification: {
+          title: "Геймификация",
+          subtitle: "Аналитика по колесу, штампам и мини-играм: влияние на LTV и средний чек.",
+        },
+        promos: {
+          title: "Акции и промо",
+          subtitle: "Эффективность акций, промокодов и рассылок через mini-app.",
+        },
+        settings: {
+          title: "Настройки магазина",
+          subtitle: "Параметры магазина, интеграции и права доступа.",
+        },
+      };
+
+      navItems.forEach((item) => {
+        item.addEventListener("click", () => {
+          const targetView = item.dataset.view;
+          navItems.forEach((i) => i.classList.toggle("nav-item--active", i === item));
+          views.forEach((view) =>
+            view.classList.toggle("view--active", view.dataset.view === targetView)
+          );
+
+          const meta = viewMeta[targetView];
+          if (meta) {
+            headerTitle.textContent = meta.title;
+            headerSubtitle.textContent = meta.subtitle;
+          }
+        });
+      });
+
+      const periodButtons = document.querySelectorAll(".period-switch__btn");
+      periodButtons.forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          periodButtons.forEach((b) =>
+            b.classList.remove("period-switch__btn--active")
+          );
+          btn.classList.add("period-switch__btn--active");
+
+          const period = btn.dataset.period;
+          await loadDashboard(period);
+        });
+      });
+
+      // logout
+      document.getElementById("logoutBtn").addEventListener("click", () => {
+        API.logout();
+        window.location.href = "index.html";
+      });
+
+      // Поиск клиента
+      const clientInput = document.getElementById("clientSearchInput");
+      const clientBtn = document.getElementById("clientSearchBtn");
+      clientBtn.addEventListener("click", async () => {
+        const q = (clientInput.value || "").trim();
+        if (!q) return;
+        const data = await API.getClientByQuery(q);
+        renderClientCard(data);
+      });
+
+      // Настройки
+      document.getElementById("settingsSaveBtn").addEventListener("click", async () => {
+        const payload = collectSettingsFromUI();
+        await API.updateSettings(payload);
+        alert("Настройки сохранены (демо).");
+      });
+
+      document.getElementById("settingsResetBtn").addEventListener("click", async () => {
+        const settings = await API.getSettings();
+        renderSettings(settings);
+      });
+
+      // Загружаем данные
+      const me = await API.getMe();
+      renderOwner(me);
+
+      const dashboardData = await API.getDashboard();
+      renderDashboard(dashboardData);
+
+      const settingsData = await API.getSettings();
+      renderSettings(settingsData);
+    });
+
+    function renderOwner(me) {
+      if (!me) return;
+      const shop = me.shop || {};
+      document.getElementById("sidebarShopName").textContent =
+        shop.name || "Магазин";
+      document.getElementById("sidebarShopId").textContent =
+        "#" + (shop.id || "shop");
+      document.getElementById("sidebarShopNote").textContent =
+        shop.started_at || "";
+      document.getElementById("sidebarPlan").textContent =
+        shop.plan_label || "Pro";
+      document.getElementById("sidebarUpdateInfo").textContent =
+        shop.update_label || "Данные обновляются каждые 5 минут";
+
+      document.getElementById("headerOwnerName").textContent =
+        me.owner_name || "Владелец";
+      const initials =
+        (me.owner_name || "В П")
+          .split(" ")
+          .map((s) => s[0])
+          .join("")
+          .slice(0, 2)
+          .toUpperCase();
+      document.getElementById("headerAvatar").textContent = initials;
+      document.getElementById("headerOwnerRole").textContent =
+        me.owner_role || "Владелец магазина";
+    }
+
+    function renderDashboard(d) {
+      if (!d) return;
+
+      document.getElementById("kpiRevenueValue").innerHTML =
+        API.formatMoney(d.revenue_mini);
+      document.getElementById("kpiRevenueShare").textContent =
+        (d.revenue_share || 0) + "%";
+      document.getElementById("kpiRevenueDelta").textContent =
+        "▲ " + (d.revenue_delta || 0) + "% к предыдущему периоду";
+
+      document.getElementById("kpiChecksValue").textContent =
+        d.checks_mini || 0;
+      document.getElementById("kpiChecksShare").textContent =
+        (d.checks_share || 0) + "%";
+      document.getElementById("kpiChecksDeltaCount").textContent =
+        (d.checks_delta_count > 0 ? "+" : "") +
+        (d.checks_delta_count || 0) +
+        " чеков";
+      document.getElementById("kpiChecksDeltaText").textContent =
+        "по сравнению с прошлым периодом";
+
+      document.getElementById("kpiAvgCheckMini").innerHTML = API.formatMoney(
+        d.avg_check_mini
+      );
+      document.getElementById("kpiAvgCheckAll").innerHTML = API.formatMoney(
+        d.avg_check_all
+      );
+      document.getElementById("kpiAvgCheckDelta").textContent =
+        "▲ " + (d.avg_check_delta || 0) + "% выше обычного";
+
+      document.getElementById("kpiRepeatShare").textContent =
+        (d.repeat_share || 0) + "%";
+      document.getElementById("kpiRepeatOthers").textContent =
+        (d.repeat_others || 0) + "%";
+
+      document.getElementById("summaryRevenueMini").innerHTML =
+        API.formatMoney(d.revenue_mini);
+      document.getElementById("summaryRevenueAll").innerHTML =
+        API.formatMoney(d.revenue_all);
+      document.getElementById("summaryRevenueShare").textContent =
+        (d.revenue_share || 0) + "%";
+
+      document.getElementById("clientsNew").textContent =
+        (d.clients_new || 0) + " клиентов";
+      document.getElementById("clientsActive").textContent =
+        (d.clients_active || 0) + " клиентов";
+      document.getElementById("clientsTotal").textContent =
+        d.clients_total || 0;
+
+      document.getElementById("retention2plus").innerHTML =
+        (d.retention_2plus || 0) +
+        '% <span class="stat-list__badge" id="retention2plusComment">' +
+        (d.retention_2plus_comment || "") +
+        "</span>";
+      document.getElementById("retention3plus").textContent =
+        (d.retention_3plus || 0) + "%";
+      document.getElementById("retentionAvgDays").textContent =
+        d.retention_avg_days || "-";
+
+      document.getElementById("gameSpins").textContent = d.games_spins || 0;
+      document.getElementById("gamePlayers").textContent =
+        d.games_players || 0;
+      document.getElementById("gameAvgCheckPlayers").innerHTML =
+        API.formatMoney(d.games_avg_check_players);
+      document.getElementById("gameAvgCheckOthers").innerHTML =
+        API.formatMoney(d.games_avg_check_others);
+      document.getElementById("gameFooterText").textContent =
+        "Игроки оставляют в среднем на " +
+        API.formatMoney(d.games_extra_revenue_per_client) +
+        " больше.";
+
+      const tbodySummary = document.querySelector("#promoTable tbody");
+      const tbodyFull = document.querySelector("#promoTableFull tbody");
+      tbodySummary.innerHTML = "";
+      tbodyFull.innerHTML = "";
+      let totalChecks = 0;
+      let totalRevenue = 0;
+
+      (d.promos || []).forEach((p) => {
+        totalChecks += p.checks || 0;
+        totalRevenue += p.revenue || 0;
+
+        const row1 = document.createElement("tr");
+        row1.innerHTML = createPromoRowHtml(p);
+        tbodySummary.appendChild(row1);
+
+        const row2 = document.createElement("tr");
+        row2.innerHTML = createPromoRowHtml(p);
+        tbodyFull.appendChild(row2);
+      });
+
+      document.getElementById("promoChecksTotal").textContent =
+        totalChecks + " чеков";
+      document.getElementById("promoRevenueTotal").innerHTML =
+        API.formatMoney(totalRevenue);
+    }
+
+    function createPromoRowHtml(p) {
+      const statusClass =
+        p.status === "finished" ? "badge-status badge-status--ended" : "badge-status";
+      const statusLabel = p.status === "finished" ? "завершена" : "активна";
+      return `
+        <td>${p.name || ""}</td>
+        <td>${p.period || ""}</td>
+        <td>${p.checks || 0}</td>
+        <td>${API.formatMoney(p.revenue || 0)}</td>
+        <td>${API.formatMoney(p.avg_check || 0)}</td>
+        <td>
+          <span class="${statusClass}">
+            <span class="badge-status__dot"></span>
+            ${statusLabel}
+          </span>
+        </td>
+      `;
+    }
+
+    function renderSettings(s) {
+      if (!s) return;
+      document.getElementById("settingShopName").value = s.shop_name || "";
+      document.getElementById("settingShopId").value = s.shop_id || "";
+      document.getElementById("settingUpdatePeriod").value =
+        s.update_period || "5m";
+      document.getElementById("settingMaxSpinsPerDay").value =
+        s.max_spins_per_day ?? "";
+      document.getElementById("settingMaxPrizesPerDay").value =
+        s.max_prizes_per_day ?? "";
+      document.getElementById("settingMinCheckEnabled").checked =
+        !!s.min_check_enabled;
+      document.getElementById("settingPin").value = s.pin_mask || "••••";
+      document.getElementById("settingStaff").value = s.staff_list || "";
+      document.getElementById("settingLimitPerShift").checked =
+        !!s.limit_per_shift;
+
+      const container = document.getElementById("settingPrizesList");
+      container.innerHTML = "";
+      (s.prizes || []).forEach((p) => {
+        const label = document.createElement("label");
+        label.className = "tag-checkbox";
+        label.innerHTML = `
+          <input type="checkbox" data-prize-code="${p.code}" ${
+          p.enabled ? "checked" : ""
+        } />
+          <span>${p.name}</span>
+        `;
+        container.appendChild(label);
+      });
+    }
+
+    function collectSettingsFromUI() {
+      const prizes = [];
+      document
+        .querySelectorAll("#settingPrizesList input[type=checkbox]")
+        .forEach((input) => {
+          prizes.push({
+            code: input.dataset.prizeCode,
+            enabled: input.checked,
+          });
+        });
+
+      return {
+        shop_name: document.getElementById("settingShopName").value,
+        shop_id: document.getElementById("settingShopId").value,
+        update_period: document.getElementById("settingUpdatePeriod").value,
+        max_spins_per_day: Number(
+          document.getElementById("settingMaxSpinsPerDay").value || 0
+        ),
+        max_prizes_per_day: Number(
+          document.getElementById("settingMaxPrizesPerDay").value || 0
+        ),
+        min_check_enabled: document.getElementById(
+          "settingMinCheckEnabled"
+        ).checked,
+        pin_mask: document.getElementById("settingPin").value,
+        staff_list: document.getElementById("settingStaff").value,
+        limit_per_shift: document.getElementById("settingLimitPerShift").checked,
+        prizes,
+      };
+    }
+
+    function renderClientCard(c) {
+      if (!c) return;
+      document.getElementById("clientCardName").textContent =
+        c.name || "Клиент";
+      document.getElementById("clientCardId").textContent =
+        (c.username ? "@" + c.username : "ID " + c.id) +
+        (c.id ? " · " + c.id : "");
+      document.getElementById("clientCardStatus").textContent =
+        c.status_label || "активен";
+      document.getElementById("clientCardChecks").textContent =
+        c.checks_total || 0;
+      document.getElementById("clientCardRevenue").innerHTML =
+        API.formatMoney(c.revenue_total || 0);
+      document.getElementById("clientCardLastVisit").textContent =
+        c.last_visit || "-";
+      document.getElementById("clientCardGames").textContent =
+        (c.games_spins || 0) + " вращений";
+      document.getElementById("clientCardStamps").textContent =
+        (c.stamps_collected || 0) + " / " + (c.stamps_total || 0);
+      document.getElementById("clientCardCoins").textContent =
+        c.coins_balance || 0;
+      document.getElementById("clientCard").dataset.empty = "false";
+    }
+
+    async function loadDashboard(period) {
+      const data = await API.getDashboard(period);
+      renderDashboard(data);
+    }
+  </script>
+</body>
+</html>
