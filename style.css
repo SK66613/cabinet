@@ -116,6 +116,21 @@ body {
   flex-direction: column;
   gap: 10px;
 }
+/* Компактные поля именно на странице логина */
+.page-login .login-label {
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+}
+
+.page-login .input {
+  height: 38px;
+  line-height: 38px;
+  padding: 0 12px;
+  border-radius: 999px;
+}
+
 
 
 .login-label {
@@ -246,6 +261,13 @@ body:not(.page-login) {
   top: 18px;
   align-self: flex-start;
 }
+.sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
 
 .sidebar__client {
   padding: 10px 12px;
@@ -1027,12 +1049,7 @@ body:not(.page-login) {
     display: none;
   }
 
-  .sidebar__brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 4px;
-}
+  
 
 
   .brand-text-sub {
