@@ -149,7 +149,7 @@ body {
 }
 
 .input {
-  flex: 1 1 200px;
+  flex: 1 1 20px;
   min-width: 0;
   border-radius: 999px;
   border: 1px solid rgba(51, 65, 85, 0.9);
