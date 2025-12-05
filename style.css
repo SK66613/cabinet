@@ -116,6 +116,21 @@ body {
   flex-direction: column;
   gap: 10px;
 }
+/* Компактные поля именно на странице логина */
+.page-login .login-label {
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+}
+
+.page-login .input {
+  height: 38px;
+  line-height: 38px;
+  padding: 0 12px;
+  border-radius: 999px;
+}
+
 
 
 .login-label {
@@ -132,21 +147,6 @@ body {
   padding: 6px 12px;
   border-radius: 999px;
 }
-/* Компактные поля именно на странице логина */
-.page-login .login-label {
-  padding: 0;
-  margin: 0;
-  border: none;
-  background: transparent;
-}
-
-.page-login .input {
-  height: 38px;        /* невысокие овалы */
-  line-height: 38px;
-  padding: 0 12px;
-  border-radius: 999px;
-}
-
 
 .input {
   flex: 1 1 200px;
@@ -261,6 +261,13 @@ body:not(.page-login) {
   top: 18px;
   align-self: flex-start;
 }
+.sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
 
 .sidebar__client {
   padding: 10px 12px;
@@ -1021,13 +1028,6 @@ body:not(.page-login) {
   }
 }
 
-  .sidebar__brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 4px;
-}
-
 @media (max-width: 720px) {
   .layout {
     grid-template-columns: minmax(0, 1fr);
@@ -1048,6 +1048,8 @@ body:not(.page-login) {
   .sidebar__footer {
     display: none;
   }
+
+  
 
 
   .brand-text-sub {
