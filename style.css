@@ -116,21 +116,6 @@ body {
   flex-direction: column;
   gap: 10px;
 }
-/* Компактные поля именно на странице логина */
-.page-login .login-label {
-  padding: 0;
-  margin: 0;
-  border: none;
-  background: transparent;
-}
-
-.page-login .input {
-  height: 18px;
-  line-height: 18px;
-  padding: 0 12px;
-  border-radius: 99px;
-}
-
 
 
 .login-label {
@@ -261,13 +246,6 @@ body:not(.page-login) {
   top: 18px;
   align-self: flex-start;
 }
-.sidebar__brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 4px;
-}
-
 
 .sidebar__client {
   padding: 10px 12px;
@@ -1049,7 +1027,12 @@ body:not(.page-login) {
     display: none;
   }
 
-  
+  .sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
 
 
   .brand-text-sub {
@@ -1080,4 +1063,32 @@ body:not(.page-login) {
   .settings-grid {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+
+/* === FIX: компактные поля логина, центрирование === */
+.page-login .login-card {
+  max-width: 420px;
+}
+
+.page-login .login-form {
+  width: 100%;
+  max-width: 320px;
+  margin: 14px auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.page-login .login-label {
+  width: 100%;
+}
+
+.page-login .login-card input,
+.page-login .login-card textarea {
+  box-sizing: border-box;
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 999px;
 }
