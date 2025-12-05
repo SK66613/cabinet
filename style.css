@@ -141,19 +141,20 @@ body {
   gap: 4px;
 }
 
-/* ЗАМЕНИ оба старых блока .input на этот один */
+/* Компактные поля только на странице логина */
+.login-form .input {
+  height: 38px;           /* фиксированная адекватная высота */
+  padding: 6px 12px;
+  border-radius: 999px;
+}
 
 .input {
   flex: 1 1 200px;
   min-width: 0;
-
-  /* форма и размер бордера: */
-  height: 40px;                     /* общая высота поля */
-  padding: 0 12px;                  /* только горизонтальный отступ */
-  border-radius: 18px;              /* вместо 999px — более плоские углы */
-  border: 1px solid rgba(51, 65, 85, 0.9);  /* толщину можно сделать 1px или 0.5px */
-
+  border-radius: 999px;
+  border: 1px solid rgba(51, 65, 85, 0.9);
   background: rgba(15, 23, 42, 0.96);
+  padding: 6px 12px;
   font-size: 12px;
   color: var(--text-main);
   outline: none;
@@ -1080,4 +1081,3 @@ body:not(.page-login) {
     grid-template-columns: minmax(0, 1fr);
   }
 }
-
