@@ -1081,3 +1081,28 @@ body:not(.page-login) {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* === OVERRIDES: компактные поля на странице логина === */
+
+/* сама карточка логина чуть уже, чтобы не разъезжалась */
+.page-login .login-card {
+  max-width: 420px;
+}
+
+/* форма и лейблы уже, чем карточка */
+.page-login .login-form {
+  max-width: 320px;
+}
+
+.page-login .login-label {
+  max-width: 320px;
+}
+
+/* сами инпуты: нормальная высота и паддинги */
+.page-login .input {
+  height: 38px;
+  line-height: 38px;
+  padding: 0 12px;
+  border-radius: 999px;
+}
+
