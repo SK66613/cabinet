@@ -1,0 +1,75 @@
+<!doctype html>
+<label class="mut">Категория</label>
+<input id="menu_category" class="input" placeholder="beer/coffee/bouquets" />
+</div>
+<div>
+<label class="mut">Позиция</label>
+<input id="menu_title" class="input" placeholder="IPA #1" />
+</div>
+<div>
+<label class="mut">Описание</label>
+<input id="menu_sub" class="input" placeholder="хмелевая" />
+</div>
+<div>
+<label class="mut">Цена, ₽</label>
+<input id="menu_price" class="input" type="number" placeholder="390" />
+</div>
+</div>
+<div class="row" style="margin-top:8px">
+<button class="btn" id="btn-add-product">Добавить позицию</button>
+<span id="prod-count" class="tag">0 позиций</span>
+</div>
+
+
+<h3 class="h">Шаг 3. Лояльность</h3>
+<div class="kv">
+<div>
+<label class="mut">Слотов</label>
+<input id="loy_slots" class="input" type="number" value="6"/>
+</div>
+<div>
+<label class="mut">PIN (демо)</label>
+<input id="loy_pin" class="input" value="1111"/>
+</div>
+</div>
+
+
+<h3 class="h">Шаг 4. Блоки</h3>
+<div class="row">
+<label class="tag"><input type="checkbox" id="b_hero" checked/> Hero</label>
+<label class="tag"><input type="checkbox" id="b_promo" checked/> Promo</label>
+<label class="tag"><input type="checkbox" id="b_menu" checked/> MenuGrid</label>
+<label class="tag"><input type="checkbox" id="b_loyalty" checked/> Loyalty</label>
+<label class="tag"><input type="checkbox" id="b_profile" checked/> Profile</label>
+</div>
+
+
+<div class="hr"></div>
+<div class="row">
+<button class="btn" id="btn-create-draft">Создать черновик</button>
+<button class="btn ghost" id="btn-preview">Превью черновика</button>
+<button class="btn" id="btn-publish">Опубликовать (Live)</button>
+</div>
+<div class="mut" style="margin-top:6px">Под капотом: пишет в листы <code>blueprints</code>, <code>app_versions</code>, <code>products</code>, <code>loyalty_rules</code>.</div>
+</div>
+
+
+<div class="panel">
+<div class="row" style="justify-content:space-between;align-items:center">
+<div>
+<div class="mut">Превью мини‑аппа (draft)</div>
+<div class="mut" id="preview-url">—</div>
+</div>
+<button class="btn ghost" id="btn-open-separate">Открыть отдельно</button>
+</div>
+<div style="margin-top:10px">
+<iframe id="preview" src="about:blank"></iframe>
+</div>
+</div>
+</div>
+</div>
+
+
+<script src="./admin.js"></script>
+</body>
+</html>
