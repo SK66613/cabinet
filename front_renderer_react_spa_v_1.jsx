@@ -306,6 +306,6 @@ function DevPanel(){
   );
 }
 
-
+{bp && <DevPanel/>}
 /* ===== Export to window ===== */
 window.App = App;
