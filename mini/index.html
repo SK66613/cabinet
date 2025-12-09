@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Mini-App</title>
+  <style>
+    html,body{margin:0;background:#0b0f19;color:#fff;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    #root{min-height:100vh}
+  </style>
+
+  <!-- 0) Бутстрап: читаем параметры превью/боевого режима -->
+  <script>
+    (function(){
+      const q = new URL(location.href).searchParams;
+      const apiBase = q.get('api_base');            // только для превью из админки
+      const appId   = q.get('app_id') || 'beer';    // ID мини-аппа
+      const channel = q.get('preview') || 'live';   // 'draft' (превью) или 'live' (боевой)
+      if (apiBase) window.API_BASE = apiBase;
+      window.__APP_ID__  = appId;
+      window.__CHANNEL__ = channel;
+    })();
+  </script>
+
+  <!-- 1) React (UMD) + Babel, чтобы не городить сборку -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- 2) Твой рендерер.
+       ВАРИАНТ А (рекомендуется): если у тебя файл JSX без import/export
+       и в конце есть:  window.App = App;  (как я просил ранее) -->
+  <script type="text/babel" data-presets="react" src="/front_renderer_react_spa_v_1.jsx"></script>
+
+  <!-- 3) Монтаж -->
+  <script type="text/babel" data-presets="react">
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+
+    // если рендерер экспонирует window.App — монтируем его
+    if (window.App){
+      root.render(<App/>);
+    } else {
+      // fallback: простая заглушка, чтобы было видно причину, если App не найден
+      function Fallback(){
+        return (
+          <div style={{padding:'24px'}}>
+            <h2>Рендерер не найден</h2>
+            <p>Ожидался <code>window.App</code> из <code>/front_renderer_react_spa_v_1.jsx</code>.</p>
+            <p>Убедись, что в твоём файле нет <code>import/export</code>, а в самом конце есть: <code>window.App = App;</code></p>
+          </div>
+        );
+      }
+      root.render(<Fallback/>);
+    }
+  </script>
+</body>
+</html>
