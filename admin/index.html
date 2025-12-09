@@ -2,119 +2,205 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Конструктор Mini-App — Мастер</title>
   <style>
-    :root{--bg:#0b0f19;--fg:#fff;--mut:#a8b3cf}
-    html,body{background:var(--bg);color:var(--fg);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0}
-    .wrap{max-width:1100px;margin:0 auto;padding:20px}
-    .grid{display:grid;grid-template-columns:420px 1fr;gap:16px}
-    .panel{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px}
-    .h{font-weight:600;margin:0 0 10px}
-    .row{display:flex;gap:8px;flex-wrap:wrap}
-    .btn{padding:10px 14px;border-radius:12px;background:#2F6FED;color:#fff;border:none;cursor:pointer}
-    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,.15)}
-    .input,select,textarea{width:100%;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#fff}
-    .mut{color:var(--mut);font-size:12px}
-    iframe{width:100%;height:70vh;border-radius:16px;border:1px solid rgba(255,255,255,.08);background:#000}
-    .kv{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-    .tag{display:inline-block;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);font-size:12px}
-    .hr{height:1px;background:rgba(255,255,255,.08);margin:12px 0}
+    :root{
+      --bg:#0b0f19; --card:#111726; --mut:#94a3b8; --brand:#2F6FED; --line:rgba(255,255,255,.08);
+      --txt:#e5e7eb; --chip:#1b2235;
+    }
+    *{box-sizing:border-box}
+    body{margin:0; font:14px/1.5 Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial; color:var(--txt); background:var(--bg);}
+    .wrap{display:grid; grid-template-columns: 520px 1fr; gap:16px; padding:16px; min-height:100vh}
+    .panel{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px;}
+    h1{margin:0 0 12px; font-size:22px}
+    .row{display:grid; grid-template-columns: 1fr 1fr; gap:10px}
+    .mut{color:var(--mut); font-size:12px}
+    label{display:block; font-weight:600; margin:10px 0 6px}
+    .input, select{width:100%; background:#0e1525; border:1px solid var(--line); border-radius:12px; padding:10px 12px; color:var(--txt)}
+    .chip{display:inline-flex; gap:8px; align-items:center; padding:8px 10px; border:1px solid var(--line); border-radius:999px; background:var(--chip)}
+    .btn{cursor:pointer; padding:10px 12px; border:1px solid var(--line); background:#0e1525; color:#fff; border-radius:12px}
+    .btn.brand{background:linear-gradient(90deg,#3a6ffd,#2F6FED); border-color:transparent}
+    .btn.ghost{background:transparent}
+    .btn:disabled{opacity:.5; cursor:not-allowed}
+    .sec{margin:14px 0 12px; font-weight:800}
+    .grid-min{display:grid; grid-template-columns: 1fr 1fr; gap:8px}
+    .list{display:grid; gap:8px}
+    .li{border:1px dashed var(--line); border-radius:12px; padding:10px}
+    .bar{display:flex; gap:8px; align-items:center; justify-content:flex-start; flex-wrap:wrap}
+    .hr{height:1px; background:var(--line); margin:14px 0}
+    .kpi{display:grid; grid-template-columns: 1fr 1fr; gap:8px}
+    .k{border:1px solid var(--line); border-radius:12px; padding:10px}
+    .top{display:flex; align-items:center; gap:8px; margin-bottom:10px}
+    .mini{font-size:12px}
+    .right-head{display:flex; align-items:center; justify-content:space-between; gap:8px}
+    .iframe{width:100%; height:72vh; border:1px solid var(--line); border-radius:14px; background:#000}
+    .hint{font-size:12px; color:var(--mut)}
+    /* sortable chips */
+    .chip-sort{ user-select:none; cursor:grab; }
+    .chip-sort.dragging{ opacity:.6; transform:scale(.98); }
+    .chip-sort.drop-hint{ outline:2px dashed rgba(255,255,255,.35); }
   </style>
 
-  <!-- ВАЖНО: укажи URL твоего GAS Web App и админ-ключ -->
+  <!-- Укажем твой воркер. ADM_KEY на клиенте не нужен. -->
   <script>
-    // пример: "https://script.google.com/macros/s/AKfycb.../exec"
-    window.API_BASE = window.API_BASE || "https://constructor-miniapp.cyberian13.workers.dev";
-    // Script Property ADM_KEY в GAS должен совпадать:
-    window.ADM_KEY  = window.ADM_KEY  || "";
+    window.API_BASE = "https://constructor-miniapp.cyberian13.workers.dev";
+    window.ADM_KEY  = "";
   </script>
 </head>
 <body>
   <div class="wrap">
-    <h2 class="h">Конструктор Mini-App — Мастер</h2>
-    <div class="grid">
-      <!-- Левая панель: настройки -->
-      <div class="panel">
-        <div class="row">
-          <div style="flex:1">
-            <label class="mut">App ID</label>
-            <input id="app_id" class="input" placeholder="например: beer_demo_1" />
-          </div>
-          <div style="width:140px">
-            <label class="mut">Вертикаль</label>
-            <select id="vertical" class="input">
-              <option value="beer">Пиво</option>
-              <option value="coffee">Кофе</option>
-              <option value="flowers">Цветы</option>
-            </select>
-          </div>
-        </div>
+    <!-- ЛЕВАЯ ПАНЕЛЬ: мастер -->
+    <div class="panel" id="left">
+      <h1>Конструктор Mini-App — Мастер</h1>
 
-        <div class="hr"></div>
-
-        <h3 class="h">Шаг 1. Бренд</h3>
-        <div class="row">
-          <div style="flex:1">
-            <label class="mut">Название</label>
-            <input id="brand_name" class="input" placeholder="Beer Club"/>
-          </div>
-          <div style="width:140px">
-            <label class="mut">Цвет бренда</label>
-            <input id="brand_color" class="input" value="#2F6FED"/>
-          </div>
+      <!-- Шаг 0 -->
+      <div class="sec">Шаг 0. Проект</div>
+      <div class="row">
+        <div>
+          <label>App ID</label>
+          <input id="app_id" class="input" placeholder="beer_demo_1"/>
+          <div class="hint">Можно оставить пустым — сгенерируем из названия</div>
         </div>
-
-        <h3 class="h">Шаг 2. Меню (быстрый старт)</h3>
-        <div class="kv">
-          <div><label class="mut">Категория</label><input id="menu_category" class="input" placeholder="beer/coffee/bouquets"/></div>
-          <div><label class="mut">Позиция</label><input id="menu_title" class="input" placeholder="IPA #1"/></div>
-          <div><label class="mut">Описание</label><input id="menu_sub" class="input" placeholder="хмелевая"/></div>
-          <div><label class="mut">Цена, ₽</label><input id="menu_price" class="input" type="number" placeholder="390"/></div>
-        </div>
-        <div class="row" style="margin-top:8px">
-          <button class="btn" id="btn-add-product">Добавить позицию</button>
-          <span id="prod-count" class="tag">0 позиций</span>
-        </div>
-
-        <h3 class="h">Шаг 3. Лояльность</h3>
-        <div class="kv">
-          <div><label class="mut">Слотов</label><input id="loy_slots" class="input" type="number" value="6"/></div>
-          <div><label class="mut">PIN (демо)</label><input id="loy_pin" class="input" value="1111"/></div>
-        </div>
-
-        <h3 class="h">Шаг 4. Блоки</h3>
-        <div class="row">
-          <label class="tag"><input type="checkbox" id="b_hero" checked/> Hero</label>
-          <label class="tag"><input type="checkbox" id="b_promo" checked/> Promo</label>
-          <label class="tag"><input type="checkbox" id="b_menu" checked/> MenuGrid</label>
-          <label class="tag"><input type="checkbox" id="b_loyalty" checked/> Loyalty</label>
-          <label class="tag"><input type="checkbox" id="b_profile" checked/> Profile</label>
-        </div>
-
-        <div class="hr"></div>
-        <div class="row">
-          <button class="btn" id="btn-create-draft">Создать черновик</button>
-          <button class="btn ghost" id="btn-preview">Превью черновика</button>
-          <button class="btn" id="btn-publish">Опубликовать (Live)</button>
-        </div>
-        <div class="mut" style="margin-top:6px">
-          Пишет в листы <code>blueprints</code>, <code>app_versions</code>, <code>products</code>, <code>loyalty_rules</code>.
+        <div>
+          <label>Вертикаль</label>
+          <select id="vertical" class="input">
+            <option value="beer">Пиво</option>
+            <option value="coffee">Кофе</option>
+            <option value="flowers">Цветы</option>
+          </select>
         </div>
       </div>
 
-      <!-- Правая панель: превью -->
-      <div class="panel">
-        <div class="row" style="justify-content:space-between;align-items:center">
-          <div>
-            <div class="mut">Превью мини-аппа (draft)</div>
-            <div class="mut" id="preview-url">—</div>
+      <!-- Шаг 1 -->
+      <div class="sec">Шаг 1. Бренд</div>
+      <div class="row">
+        <div>
+          <label>Название</label>
+          <input id="brand_name" class="input" placeholder="Beer Club"/>
+        </div>
+        <div>
+          <label>Цвет бренда</label>
+          <input id="brand_color" class="input" value="#2F6FED"/>
+        </div>
+      </div>
+
+      <!-- Шаг 2 -->
+      <div class="sec">Шаг 2. Меню (быстрый старт)</div>
+      <div class="row">
+        <div>
+          <label>Категория</label>
+          <input id="menu_cat" class="input" placeholder="beer/coffee/flowers"/>
+        </div>
+        <div>
+          <label>Позиция</label>
+          <input id="menu_title" class="input" placeholder="IPA #1"/>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Описание</label>
+          <input id="menu_sub" class="input" placeholder="хмелевая"/>
+        </div>
+        <div>
+          <label>Цена, ₽</label>
+          <input id="menu_price" type="number" class="input" placeholder="390"/>
+        </div>
+      </div>
+      <div class="bar" style="margin-top:8px">
+        <button id="add_pos" class="btn">Добавить позицию</button>
+        <button id="apply_preset_menu" class="btn ghost">Подставить шаблон меню</button>
+        <span class="mut mini" id="pos_count">0 позиций</span>
+      </div>
+      <div class="list" id="menu_list" style="margin-top:8px"></div>
+
+      <!-- Шаг 3 -->
+      <div class="sec">Шаг 3. Лояльность</div>
+      <div class="row">
+        <div>
+          <label>Слотов</label>
+          <input id="loyal_slots" type="number" class="input" value="6"/>
+        </div>
+        <div>
+          <label>PIN (демо)</label>
+          <input id="loyal_pin" class="input" value="1111"/>
+        </div>
+      </div>
+
+      <!-- Шаг 3a: Игры -->
+      <div class="sec">Шаг 3a. Игры</div>
+      <div class="row">
+        <div>
+          <label>Игра</label>
+          <select id="game_code" class="input">
+            <option value="">— без игры —</option>
+            <option value="flappy">Flappy Bee (встроенная)</option>
+            <option value="runner">Beer Runner (встроенная)</option>
+            <option value="match3">Hop-Match (iframe)</option>
+            <option value="quiz">Beer Quiz (встроенная)</option>
+          </select>
+        </div>
+        <div>
+          <label>Монеты за личный рекорд</label>
+          <input id="game_coins" type="number" class="input" value="10"/>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Лимит попыток/день</label>
+          <input id="game_limit" type="number" class="input" value="20"/>
+        </div>
+        <div>
+          <label>Источник (для iframe-игры)</label>
+          <input id="game_src" class="input" placeholder="https://cdn.domain/games/match3/index.html"/>
+          <div class="hint">Нужно только для игр типа iframe (например, Match-3)</div>
+        </div>
+      </div>
+
+      <!-- Шаг 4: Блоки -->
+      <div class="sec">Шаг 4. Блоки (перетащи, чтобы поменять порядок)</div>
+      <div id="blocks_sort" class="bar" style="gap:10px; flex-wrap:wrap"></div>
+      <div class="bar" style="margin-top:6px">
+        <button id="reset_order" class="btn ghost">Сбросить порядок</button>
+        <span class="hint">Включай/выключай галочкой. Тяни чипы мышкой, чтобы поменять порядок.</span>
+      </div>
+
+      <div class="hr"></div>
+      <div class="bar">
+        <button id="btn_save" class="btn brand">Создать черновик</button>
+        <button id="btn_preview" class="btn">Превью черновика</button>
+        <button id="btn_publish" class="btn ghost">Опубликовать LIVE</button>
+      </div>
+
+      <div class="hr"></div>
+      <div class="kpi">
+        <div class="k">
+          <div class="mut">Ссылка превью</div>
+          <div id="prev_url" class="mini" style="word-break:break-all">—</div>
+          <div class="bar" style="margin-top:6px">
+            <button id="open_prev" class="btn">Открыть отдельно</button>
+            <button id="copy_prev" class="btn ghost">Копировать</button>
           </div>
-          <button class="btn ghost" id="btn-open-separate">Открыть отдельно</button>
         </div>
-        <div style="margin-top:10px">
-          <iframe id="preview" src="about:blank"></iframe>
+        <div class="k">
+          <div class="mut">Публикация</div>
+          <div class="mini">После «Опубликовать» получите LIVE-ссылку</div>
+          <div id="live_url" class="mini" style="word-break:break-all; margin-top:4px">—</div>
         </div>
+      </div>
+    </div>
+
+    <!-- ПРАВАЯ ПАНЕЛЬ: превью -->
+    <div class="panel">
+      <div class="right-head">
+        <div class="top">
+          <div class="chip" style="background:rgba(47,111,237,.15); border-color:transparent"><b>Превью mini-аппы</b> <span id="tag_draft" class="mut">draft</span></div>
+        </div>
+        <div class="mut mini" id="badge_app">app_id=—</div>
+      </div>
+      <iframe id="frame" class="iframe" src="about:blank"></iframe>
+      <div class="hint" style="margin-top:8px">
+        Превью загружает блюпринт из GAS через ваш воркер, рендер — <code>/mini/index.html</code>.
       </div>
     </div>
   </div>
