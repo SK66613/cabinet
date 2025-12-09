@@ -1,406 +1,242 @@
-/* Конструктор Mini-App (мастер)
-   Работает через ваш прокси-воркер (CORS + скрытый adm_key):
-   window.API_BASE = "https://constructor-miniapp.cyberian13.workers.dev"
-*/
+/* ====== Конструктор Mini-App · admin.js ====== */
 
-(function(){
-  const $ = (sel)=>document.querySelector(sel);
+const API_BASE = (window.API_BASE || '').replace(/\/+$/,''); // без хвостового /
+const $ = sel => document.querySelector(sel);
+const on = (el, ev, fn) => el && el.addEventListener(ev, fn, {passive:true});
 
-  // Порядок по умолчанию
-  const BLOCKS_ORDER_DEFAULT = ['hero','promo','menuGrid','loyaltyCard','stampShelf','bonusWheel','profile'];
-  const BLOCK_TITLES = { hero:'Hero', promo:'Promo', menuGrid:'Menu', loyaltyCard:'Loyalty', stampShelf:'Stamp', bonusWheel:'Wheel', profile:'Profile' };
+const PRESETS = {
+  beer:   { promo:[{title:'Craft Beer', sub:'Кто мы, где мы', cta:'О нас'}], category:'beer' },
+  coffee: { promo:[{title:'Coffee To Go', sub:'Горячо, быстро', cta:'О нас'}], category:'coffee' },
+  flowers:{ promo:[{title:'Bloom Studio', sub:'Букеты каждый день', cta:'О нас'}], category:'bouquets' }
+};
 
-  // Каталог игр
-  const GAMES = {
-    flappy: { code:'flappy', title:'Flappy Bee', engine:'embedded', score_unit:'pts', attempts_daily:20, coins_on_pb:10 },
-    runner: { code:'runner', title:'Beer Runner', engine:'embedded', score_unit:'m',   attempts_daily:20, coins_on_pb:15 },
-    match3: { code:'match3', title:'Hop-Match',   engine:'iframe',  score_unit:'pts', attempts_daily:10, coins_on_pb:12, src:'' },
-    quiz:   { code:'quiz',   title:'Beer Quiz',   engine:'embedded', score_unit:'pts', attempts_daily:5,  coins_on_pb:8 }
-  };
+const GAMES = {
+  flappy: { title:'Bumblebee', engine:'embedded', score_unit:'pts' }
+};
 
-  // Состояние
-  const S = {
-    app_id: '',
-    vertical: 'beer',
-    brand: { name:'', color:'#2F6FED' },
-    menu: [],
-    loyalty: { slots:6, pin:'1111' },
-    blocks: { hero:true, promo:true, menuGrid:true, loyaltyCard:true, stampShelf:false, bonusWheel:false, profile:true },
-    game: { code:'', coins_on_pb:10, attempts_daily:20, src:'' },
-    order: [...BLOCKS_ORDER_DEFAULT],
-  };
+const S = {
+  app_id:'', vertical:'beer',
+  brand:{ name:'', color:'#2F6FED', sub:'' },
+  positions:[],
+  loyalty:{ slots:6, demo_pin:'1111' },
+  blocks:{ hero:true, promo:true, menuGrid:true, loyaltyCard:true, stampShelf:true, bonusWheel:true, profile:true },
+  game:{ code:'flappy', attempts_daily:20 },
+};
 
-  // Пресеты вертикалей
-  const PRESETS = {
-    beer: {
-      name: 'Beer Club', color:'#2F6FED', category:'beer',
-      promo: ['–20% на IPA сегодня','Каждая 6-я кружка — бесплатно'],
-      menu: [
-        ['beer','IPA #1','хмелевая',390],
-        ['beer','Lager','светлое',320],
-        ['beer','Stout','плотный',420],
-      ],
-      slots:6
+const PV = { device:'360', tgChrome:true, demo:true, tab:'/' };
+
+function demoTgId(){
+  let id = localStorage.getItem('demo_tg_id');
+  if (!id){ id = String(Math.floor(Math.random()*1e9)); localStorage.setItem('demo_tg_id', id); }
+  return id;
+}
+
+/* ---------- API helper (через воркер) ---------- */
+async function api(path, params={}){
+  const u = new URL(API_BASE);
+  u.searchParams.set('endpoint', path);
+  // «пингуем» как демо-пользователь
+  u.searchParams.set('tg_id', demoTgId());
+  Object.entries(params).forEach(([k,v]) => v!=null && u.searchParams.set(k, v));
+  const r = await fetch(u.toString());
+  return r.json();
+}
+
+/* ---------- Утилиты ---------- */
+function slug(s){ return String(s||'').toLowerCase().replace(/[^\w]+/g,'_').replace(/^_+|_+$/g,''); }
+function chipToggle(el){
+  const on = el.getAttribute('aria-pressed') === 'true';
+  el.setAttribute('aria-pressed', (!on).toString());
+}
+function collectBlocksOrder(){
+  // базовый фиксированный порядок, включаем только отмеченные
+  const order = ['hero','promo','menuGrid','loyaltyCard','stampShelf','bonusWheel','profile'];
+  return order.filter(k => S.blocks[k]);
+}
+
+/* ---------- Blueprint ---------- */
+function makeBlueprint(){
+  const name  = $('#brand_name').value.trim() || (S.vertical==='coffee'?'Coffee To Go': S.vertical==='flowers'?'Bloom Studio':'Beer Club');
+  const color = $('#brand_color').value.trim() || '#2F6FED';
+  const subtitle = $('#brand_sub').value.trim() || (S.vertical==='coffee'?'Горячо, быстро, по-домашнему':'Свежие сорта, бонусы и призы');
+
+  const home = collectBlocksOrder().slice();
+  const wantGame = !!S.game.code;
+
+  if (wantGame){
+    if (!home.includes('gamesPicker')){
+      const pos = Math.max(home.indexOf('menuGrid'),0)+1;
+      home.splice(pos, 0, 'gamesPicker');
+    }
+    if (!home.includes('leaderboard')){
+      const pos = Math.max(home.indexOf('gamesPicker'),0)+1;
+      home.splice(pos, 0, 'leaderboard');
+    }
+  }else{
+    ['gamesPicker','leaderboard'].forEach(b=>{ const i=home.indexOf(b); if (i>=0) home.splice(i,1); });
+  }
+
+  const routes = [
+    { path:'/',            title:'Главная',   icon:'home',    blocks: home },
+    { path:'/tournament',  title:'Турнир',    icon:'cup',     blocks: ['leaderboard'] },
+    { path:'/play',        title:'Играть',    icon:'gamepad', blocks: wantGame ? ['gamesPicker'] : [] },
+    { path:'/bonuses',     title:'Бонусы',    icon:'gift',    blocks: (S.blocks.bonusWheel||S.blocks.stampShelf) ? ['bonusWheel','stampShelf'] : [] },
+    { path:'/profile',     title:'Профиль',   icon:'user',    blocks: ['profile'] },
+  ];
+
+  const bp = {
+    app:   { name, theme:{ brand: color }, subtitle },
+    nav:   { type:'tabs', routes: routes.map(r=>({ path:r.path, title:r.title, icon:r.icon })) },
+    routes: routes.map(r=>({ path:r.path, blocks:r.blocks })),
+    blocks: {
+      hero:        { props:{ title: (S.vertical==='coffee'?'Кофе рядом с вами':'Заходи на дегустацию'), subtitle } },
+      promo:       { props:{ items: PRESETS[S.vertical]?.promo || [] } },
+      menuGrid:    { props:{ category: PRESETS[S.vertical]?.category || $('#menu_cat').value.trim() || 'beer' } },
+      loyaltyCard: { props:{ slots: Number($('#loyalty_slots').value||6) } },
+      stampShelf:  { props:{} },
+      bonusWheel:  { props:{} },
+      profile:     { props:{} },
+      gamesPicker: { props:{ layout:'list', showCoins:true, games: S.game.code ? [S.game.code] : [] } },
+      leaderboard: { props:{ modes:['daily','all'], game:'auto' } }
     },
-    coffee: {
-      name: 'Coffee To Go', color:'#7A4CF4', category:'coffee',
-      promo: ['–10% утром до 11:00','5-й кофе — в подарок'],
-      menu: [
-        ['coffee','Эспрессо','30 мл',120],
-        ['coffee','Капучино','300 мл',190],
-        ['coffee','Латте','300 мл',210],
-      ],
-      slots:5
-    },
-    flowers: {
-      name: 'Bloom Studio', color:'#E74C3C', category:'flowers',
-      promo: ['Розы — 39 ₽/шт','Сборка — бесплатно'],
-      menu: [
-        ['flowers','Розы (шт)','красные',39],
-        ['flowers','Тюльпаны (шт)','микс',29],
-        ['flowers','Букет «Классика»','7 роз',399],
-      ],
-      slots:0
-    }
+    dicts: {},
+    games: {}
   };
 
-  // Утилки
-  const slug = s => (s||'').toLowerCase().trim()
-    .replace(/[^\w\s-]+/g,'').replace(/\s+/g,'_').replace(/_+/g,'_').slice(0,64);
-
-  function toast(msg){
-    const el = document.createElement('div');
-    el.textContent = msg;
-    Object.assign(el.style, {position:'fixed',left:'50%',bottom:'24px',transform:'translateX(-50%)',
-      background:'rgba(0,0,0,.85)',color:'#fff',padding:'10px 14px',borderRadius:'12px',zIndex:9999});
-    document.body.appendChild(el); setTimeout(()=>el.remove(), 1800);
-  }
-
-  // Применить пресет вертикали
-  function applyVerticalPreset(v){
-    const p = PRESETS[v] || PRESETS.beer;
-    if (!$('#brand_name').value) $('#brand_name').value = p.name;
-    $('#brand_color').value = p.color;
-    if (!$('#menu_cat').value) $('#menu_cat').value = p.category;
-    S.menu = p.menu.map((r,i)=>({
-      id:'p'+(i+1),
-      category:r[0], title:r[1], subtitle:r[2], price_cents: Math.round(Number(r[3]))*100
-    }));
-    S.loyalty.slots = p.slots || 6;
-    renderMenuList();
-    updateCounts();
-    buildPreviewUrl();
-  }
-
-  // ====== Привязки UI полей ======
-  $('#vertical').addEventListener('change', e=>{ S.vertical = e.target.value; applyVerticalPreset(S.vertical); });
-
-  $('#brand_name').addEventListener('input', e=>{
-    const v = e.target.value.trim();
-    if (!$('#app_id').value) $('#app_id').value = slug(v||'app');
-    buildPreviewUrl();
-  });
-  $('#brand_color').addEventListener('input', e=> S.brand.color = e.target.value );
-
-  $('#app_id').addEventListener('input', e=>{ S.app_id = e.target.value.trim(); buildPreviewUrl(); });
-
-  $('#add_pos').addEventListener('click', ()=>{
-    const cat = $('#menu_cat').value.trim();
-    const ti  = $('#menu_title').value.trim();
-    const su  = $('#menu_sub').value.trim();
-    const pr  = Number($('#menu_price').value||0);
-    if (!cat || !ti || !pr){ toast('Заполните категорию, позицию и цену'); return; }
-    S.menu.push({ id:'p'+(Date.now()%1e6), category:cat, title:ti, subtitle:su, price_cents: pr*100 });
-    renderMenuList(); updateCounts();
-    $('#menu_title').value=''; $('#menu_sub').value=''; $('#menu_price').value='';
-  });
-
-  $('#apply_preset_menu').addEventListener('click', ()=>{ applyVerticalPreset($('#vertical').value); toast('Подставили шаблон меню'); });
-
-  $('#loyal_slots').addEventListener('input', e=> S.loyalty.slots = Math.max(0, Number(e.target.value||0)));
-  $('#loyal_pin').addEventListener('input', e=> S.loyalty.pin = e.target.value.trim());
-
-  // Игры
-  $('#game_code').addEventListener('change', e=>{
-    const code = e.target.value;
-    if (!code){ S.game = { code:'', coins_on_pb:10, attempts_daily:20, src:'' }; buildPreviewUrl(); return; }
-    const g = GAMES[code] || {};
-    S.game.code = code;
-    S.game.coins_on_pb = g.coins_on_pb ?? 10;
-    S.game.attempts_daily = g.attempts_daily ?? 20;
-    $('#game_coins').value = S.game.coins_on_pb;
-    $('#game_limit').value = S.game.attempts_daily;
-    if (g.engine === 'iframe' && !S.game.src) $('#game_src').placeholder = 'https://cdn.domain/games/'+code+'/index.html';
-    buildPreviewUrl();
-  });
-  $('#game_coins').addEventListener('input', e=>{ S.game.coins_on_pb = Math.max(0, Number(e.target.value||0)); });
-  $('#game_limit').addEventListener('input', e=>{ S.game.attempts_daily = Math.max(0, Number(e.target.value||0)); });
-  $('#game_src').addEventListener('input', e=>{ S.game.src = e.target.value.trim(); });
-
-  // ====== Рендер списка меню ======
-  function renderMenuList(){
-    const c = $('#menu_list'); c.innerHTML='';
-    S.menu.forEach((m,idx)=>{
-      const div = document.createElement('div');
-      div.className='li';
-      div.innerHTML = `<div class="row">
-        <div><div class="mut mini">Категория</div><div>${m.category}</div></div>
-        <div><div class="mut mini">Позиция</div><div>${m.title}</div></div>
-      </div>
-      <div class="row" style="margin-top:6px">
-        <div><div class="mut mini">Описание</div><div>${m.subtitle||'—'}</div></div>
-        <div><div class="mut mini">Цена</div><div>${(m.price_cents/100).toFixed(0)} ₽</div></div>
-      </div>
-      <div class="bar" style="margin-top:8px"><button class="btn ghost" data-del="${idx}">Удалить</button></div>`;
-      c.appendChild(div);
-    });
-    c.querySelectorAll('[data-del]').forEach(b=>{
-      b.addEventListener('click', e=>{
-        const i = Number(e.currentTarget.dataset.del);
-        S.menu.splice(i,1); renderMenuList(); updateCounts();
-      });
-    });
-  }
-  function updateCounts(){ $('#pos_count').textContent = `${S.menu.length} позиций`; }
-
-  // ====== Sortable блоки ======
-  function renderBlocksSortable(){
-    const host = $('#blocks_sort');
-    host.innerHTML = '';
-
-    function chip(key){
-      const div = document.createElement('div');
-      div.className = 'chip chip-sort';
-      div.draggable = true;
-      div.dataset.key = key;
-      div.innerHTML = `
-        <input type="checkbox" ${S.blocks[key]?'checked':''} style="margin-right:6px"/>
-        <span>${BLOCK_TITLES[key] || key}</span>
-        <span style="opacity:.6;margin-left:8px; font-size:12px; letter-spacing:.2px">⋮⋮</span>
-      `;
-      div.querySelector('input').addEventListener('change', (e)=>{
-        S.blocks[key] = e.target.checked;
-        buildPreviewUrl();
-      });
-      div.addEventListener('dragstart', (e)=>{
-        div.classList.add('dragging');
-        e.dataTransfer.setData('text/plain', key);
-        e.dataTransfer.effectAllowed = 'move';
-      });
-      div.addEventListener('dragend', ()=>{
-        div.classList.remove('dragging');
-        host.querySelectorAll('.drop-hint').forEach(n=>n.classList.remove('drop-hint'));
-        buildPreviewUrl();
-      });
-      return div;
-    }
-
-    S.order.forEach(key => host.appendChild(chip(key)));
-
-    host.addEventListener('dragover', (e)=>{
-      e.preventDefault();
-      const dragging = host.querySelector('.chip-sort.dragging');
-      if (!dragging) return;
-      const after = getAfterElement(host, e.clientX, e.clientY);
-      host.querySelectorAll('.drop-hint').forEach(n=>n.classList.remove('drop-hint'));
-      if (after == null) { host.lastElementChild?.classList.add('drop-hint'); }
-      else { after.classList.add('drop-hint'); }
-    });
-
-    host.addEventListener('drop', (e)=>{
-      e.preventDefault();
-      const key = e.dataTransfer.getData('text/plain');
-      const from = S.order.indexOf(key);
-      if (from < 0) return;
-
-      const afterEl = getAfterElement(host, e.clientX, e.clientY);
-      let to;
-      if (afterEl == null) { to = S.order.length - 1; }
-      else {
-        const afterKey = afterEl.dataset.key;
-        to = Math.max(0, S.order.indexOf(afterKey));
-      }
-      if (to === from) return;
-
-      const [itm] = S.order.splice(from,1);
-      S.order.splice(to,0,itm);
-
-      localStorage.setItem('blocks_order', JSON.stringify(S.order)); // persist
-      renderBlocksSortable();
-    });
-
-    function getAfterElement(container, x, y){
-      const els = [...container.querySelectorAll('.chip-sort:not(.dragging)')];
-      let closest = null, closestDist = Infinity;
-      for (const el of els){
-        const r = el.getBoundingClientRect();
-        const cx = Math.max(r.left, Math.min(x, r.right));
-        const cy = Math.max(r.top,  Math.min(y, r.bottom));
-        const dx = x - cx, dy = y - cy, d2 = dx*dx + dy*dy;
-        if (d2 < closestDist){ closestDist = d2; closest = el; }
-      }
-      return closest;
-    }
-  }
-
-  // Сброс порядка
-  $('#reset_order').addEventListener('click', ()=>{
-    S.order = [...BLOCKS_ORDER_DEFAULT];
-    localStorage.removeItem('blocks_order');
-    renderBlocksSortable();
-    buildPreviewUrl();
-  });
-
-  // ====== API через воркер ======
-  function buildUrl(endpoint, extra={}) {
-    const base = window.API_BASE || '';
-    const u = new URL(base||location.origin);
-    u.searchParams.set('endpoint', endpoint);
-    Object.entries(extra).forEach(([k,v])=> v!=null && u.searchParams.set(k,v));
-    return u.toString();
-  }
-  async function apiGET(endpoint, params={}){ const r = await fetch(buildUrl(endpoint, params)); return r.json(); }
-  async function apiPOST(endpoint, body={}, params={}) {
-    const r = await fetch(buildUrl(endpoint, params), {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify(body)});
-    return r.json();
-  }
-
-  // Порядок -> только включённые
-  function collectBlocksOrder(){ return S.order.filter(key => !!S.blocks[key]); }
-
-  // Сборка блюпринта с игрой
-  function makeBlueprint(){
-    const name  = $('#brand_name').value.trim()
-      || (S.vertical==='coffee'?'Coffee To Go': S.vertical==='flowers'?'Bloom Studio':'Beer Club');
-    const color = $('#brand_color').value.trim() || '#2F6FED';
-    const ordered = collectBlocksOrder();
-
-    const wantGame = !!S.game.code;
-    if (wantGame){
-      if (!ordered.includes('gamesPicker')) {
-        const pos = Math.max(ordered.indexOf('menuGrid'),0)+1;
-        ordered.splice(pos, 0, 'gamesPicker');
-      }
-      if (!ordered.includes('leaderboard')) {
-        const pos = Math.max(ordered.indexOf('gamesPicker'),0)+1;
-        ordered.splice(pos, 0, 'leaderboard');
-      }
-    }else{
-      ['gamesPicker','leaderboard'].forEach(b=>{ const i=ordered.indexOf(b); if (i>=0) ordered.splice(i,1); });
-    }
-
-    const bp = {
-      app: { name, theme:{ brand: color } },
-      routes: [{ path:'/', blocks: ordered }],
-      blocks: {
-        hero:  { props:{ title: (S.vertical==='coffee'?'Кофе рядом с вами':'Заходи на дегустацию'),
-                         subtitle: (S.vertical==='coffee'?'Горячо, быстро, по-домашнему':'Свежие сорта, бонусы и призы') } },
-        promo: { props:{ items: PRESETS[S.vertical]?.promo || [] } },
-        menuGrid: { props:{ category: PRESETS[S.vertical]?.category || $('#menu_cat').value.trim() || 'beer' } },
-        loyaltyCard: { props:{ slots: S.loyalty.slots||6 } },
-        stampShelf: { props:{} },
-        bonusWheel: { props:{} },
-        profile: { props:{} }
-      },
-      dicts: {},
-      games: {}
+  if (S.game.code){
+    const gcat = GAMES[S.game.code] || {};
+    bp.games[S.game.code] = {
+      enabled:true,
+      title: gcat.title || S.game.code,
+      engine:gcat.engine || 'embedded',
+      score_unit:gcat.score_unit || 'pts',
+      attempts_daily: Number($('#game_attempts').value||20),
     };
-
-    if (wantGame){
-      const gcat = GAMES[S.game.code] || {};
-      bp.games[S.game.code] = {
-        enabled: true,
-        title: gcat.title || S.game.code,
-        engine: gcat.engine || 'embedded',
-        score_unit: gcat.score_unit || 'pts',
-        attempts_daily: S.game.attempts_daily || 20,
-        coins_on_pb: S.game.coins_on_pb || 0,
-        ...(gcat.engine === 'iframe' ? { src: (S.game.src || '') } : {})
-      };
-      bp.blocks.gamesPicker = { props:{ layout:'grid', showCoins:true, games:[S.game.code] } };
-      bp.blocks.leaderboard = { props:{ modes:['daily','all'], game:'auto' } };
-    }
-    return bp;
   }
 
-  // Save draft / products / loyalty
-  async function saveDraft(){
-    const app_id = ($('#app_id').value.trim() || slug($('#brand_name').value||'app'));
-    $('#app_id').value = app_id;
-    S.app_id = app_id;
+  return bp;
+}
 
-    const blueprint = makeBlueprint();
+/* ---------- Preview URL ---------- */
+function makeMiniUrl({ app_id, preview='draft' }){
+  const base = location.origin;                   // твой GitHub Pages
+  const api  = API_BASE;
+  const u = new URL(base + '/mini/index.html');
+  u.searchParams.set('app_id', app_id);
+  u.searchParams.set('preview', preview==='live'?'live':'draft');
+  if (api) u.searchParams.set('api_base', api);
+  u.searchParams.set('preview_full', '1');
+  u.searchParams.set('dev', '1');
+  if (PV.demo) u.searchParams.set('demo', '1');
+  if (PV.tgChrome) u.searchParams.set('tg_chrome', '1');
+  if (PV.tab && PV.tab !== '/') u.searchParams.set('path', PV.tab);
+  u.searchParams.set('tg', demoTgId());
+  return u.toString();
+}
 
-    const r1 = await apiPOST('/admin/blueprint/save_draft', { app_id, vertical: S.vertical, blueprint });
-    if (!r1?.ok) throw new Error(r1?.error||'save_draft_failed');
+function applyPreviewSizing(){
+  const fr = $('#frame');
+  fr.parentElement.classList.toggle('w100', PV.device==='100%');
+  fr.style.width = (PV.device==='100%') ? '100%' : (PV.device+'px');
+}
 
-    if (S.menu.length){
-      const items = S.menu.map(m=>({ id:m.id, category:m.category, title:m.title, subtitle:m.subtitle, price_cents:m.price_cents }));
-      const r2 = await apiPOST('/admin/products/bulk_upsert', { app_id, items });
-      if (!r2?.ok) throw new Error(r2?.error||'products_upsert_failed');
-    }
+function buildPreviewUrl(){
+  const app_id = ($('#app_id').value.trim() || slug($('#brand_name').value||'app'));
+  const url = makeMiniUrl({ app_id, preview:'draft' });
+  $('#prev_url').textContent = url;
+  $('#frame').src = url;
+  applyPreviewSizing();
+}
 
-    const r3 = await apiPOST('/admin/loyalty/upsert', { app_id, slots: S.loyalty.slots||6, pin: S.loyalty.pin||'1111' });
-    if (!r3?.ok) throw new Error(r3?.error||'loyalty_upsert_failed');
+/* ---------- Handlers ---------- */
+function bindAccordion(){
+  $('#acc').addEventListener('click', (e)=>{
+    const head = e.target.closest('.acc__head');
+    if (!head) return;
+    head.parentElement.classList.toggle('open');
+  });
+}
 
-    toast('Черновик сохранён');
+function bindControls(){
+  // верх
+  on($('#app_id'),'input', buildPreviewUrl);
+  on($('#vertical'),'change', e=>{ S.vertical = e.target.value; buildPreviewUrl(); });
+  // бренд
+  ['brand_name','brand_color','brand_sub'].forEach(id => on($( '#'+id ), 'input', buildPreviewUrl));
+  // меню
+  on($('#add_pos'),'click', ()=>{
+    const pos = {
+      cat: $('#menu_cat').value.trim(),
+      title: $('#menu_title').value.trim(),
+      sub: $('#menu_sub').value.trim(),
+      price: Number($('#menu_price').value||0)
+    };
+    if (pos.title){ S.positions.push(pos); $('#pos_count').textContent = `${S.positions.length} позиций`; }
+  });
+  // лояльность
+  on($('#loyalty_slots'),'input', e=>{ S.loyalty.slots = Number(e.target.value||6); buildPreviewUrl(); });
+  on($('#demo_pin'),'input', e=>{ S.loyalty.demo_pin = e.target.value.trim(); });
+
+  // блоки
+  $('#block_tabs').addEventListener('click', e=>{
+    const b = e.target.closest('.tab'); if(!b) return;
+    const key = b.dataset.block; chipToggle(b);
+    S.blocks[key] = (b.getAttribute('aria-pressed') === 'true');
     buildPreviewUrl();
-  }
+  });
 
-  async function publishLive(){
-    const app_id = $('#app_id').value.trim();
-    if (!app_id){ toast('Сначала задайте App ID и сохраните черновик'); return; }
-    const r = await apiPOST('/admin/publish', { app_id, to:'live' });
-    if (!r?.ok){ toast('Ошибка публикации: '+(r?.error||'')); return; }
-    const live = makeMiniUrl({ app_id, preview:'live' });
-    $('#live_url').textContent = live;
-    toast('Опубликовано в LIVE');
-  }
+  // игры
+  on($('#game_code'),'change', e=>{ S.game.code = e.target.value || ''; buildPreviewUrl(); });
+  on($('#game_attempts'),'input', ()=> buildPreviewUrl());
 
-  // Превью URL / iframe
-  function makeMiniUrl({ app_id, preview='draft' }){
-    // если админка лежит в корне домена с мини, то так:
-    const base = location.origin;
-    const api  = window.API_BASE || '';
-    const u = new URL(base + '/mini/index.html');
-    u.searchParams.set('app_id', app_id);
-    u.searchParams.set('preview', preview==='live'?'live':'draft');
-    if (api) u.searchParams.set('api_base', api);
-    return u.toString();
-  }
-  function buildPreviewUrl(){
-    const app_id = ($('#app_id').value.trim() || slug($('#brand_name').value||'app'));
-    $('#badge_app').textContent = `app_id=${app_id}`;
-    const url = makeMiniUrl({ app_id, preview:'draft' });
-    $('#prev_url').textContent = url;
-    $('#frame').src = url;
-  }
+  // превью-панель
+  on($('#pv_device'),'change', e=>{ PV.device = e.target.value; applyPreviewSizing(); });
+  on($('#pv_tgchrome'),'change', e=>{ PV.tgChrome = e.target.checked; buildPreviewUrl(); });
+  on($('#pv_demo'),'change', e=>{ PV.demo = e.target.checked; buildPreviewUrl(); });
+  on($('#pv_tab'),'change', e=>{ PV.tab = e.target.value; buildPreviewUrl(); });
+  on($('#open_separate'),'click', ()=>{ window.open($('#prev_url').textContent, '_blank'); });
 
-  // Кнопки
-  $('#btn_save').addEventListener('click', async ()=>{ try{ await saveDraft(); }catch(e){ toast('Ошибка: '+String(e.message||e)); } });
-  $('#btn_preview').addEventListener('click', buildPreviewUrl);
-  $('#open_prev').addEventListener('click', ()=> { const u=$('#prev_url').textContent; if(u) window.open(u,'_blank'); });
-  $('#copy_prev').addEventListener('click', async ()=> { await navigator.clipboard.writeText($('#prev_url').textContent||''); toast('Скопировано'); });
-  $('#btn_publish').addEventListener('click', publishLive);
+  // действия
+  on($('#save_draft'),'click', saveDraft);
+  on($('#preview_btn'),'click', buildPreviewUrl);
+  on($('#publish_btn'),'click', publishLive);
+}
 
-  // ====== Инициализация ======
-  (function init(){
-    // восстановим порядок из localStorage
-    try{
-      const saved = JSON.parse(localStorage.getItem('blocks_order')||'[]');
-      if (Array.isArray(saved) && saved.length) {
-        const known = BLOCKS_ORDER_DEFAULT;
-        S.order = saved.filter(k => known.includes(k));
-        known.forEach(k => { if (!S.order.includes(k)) S.order.push(k); });
-      }
-    }catch(_){}
-    renderBlocksSortable();
+async function saveDraft(){
+  const app_id = ($('#app_id').value.trim() || slug($('#brand_name').value||'app'));
+  const bp = makeBlueprint();
+  const r = await api('/admin/blueprint_save', { app_id, doc: JSON.stringify(bp) });
+  toast(r.ok? 'Черновик сохранён':'Ошибка сохранения', r.ok);
+  buildPreviewUrl();
+}
+async function publishLive(){
+  const app_id = ($('#app_id').value.trim() || slug($('#brand_name').value||'app'));
+  const r = await api('/admin/publish', { app_id });
+  toast(r.ok? 'Опубликовано в LIVE':'Ошибка публикации', r.ok);
+}
 
-    S.vertical = $('#vertical').value;
-    applyVerticalPreset(S.vertical);
-    S.brand.color = $('#brand_color').value;
-    S.loyalty.pin = $('#loyal_pin').value; S.loyalty.slots = Number($('#loyal_slots').value||6);
-    buildPreviewUrl();
-  })();
+function toast(msg, ok=false){
+  const t = document.createElement('div');
+  t.className = 'notice'; t.style.borderColor = ok?'rgba(55,214,122,.45)':'rgba(255,107,107,.45)';
+  t.textContent = msg;
+  const host = document.body; host.appendChild(t);
+  setTimeout(()=> t.remove(), 2200);
+}
 
-})();
+/* ---------- Init ---------- */
+function init(){
+  $('#api_hint').textContent = API_BASE ? API_BASE : 'API не задан (window.API_BASE)';
+  // дефолты
+  $('#brand_color').value = S.brand.color;
+  $('#game_code').value = S.game.code;
+  // выставим aria-pressed для чипов блоков
+  Array.from($('#block_tabs').querySelectorAll('.tab')).forEach(b=>{
+    const key = b.dataset.block; b.setAttribute('aria-pressed', !!S.blocks[key]);
+  });
+
+  bindAccordion();
+  bindControls();
+  buildPreviewUrl();
+}
+
+document.addEventListener('DOMContentLoaded', init);
