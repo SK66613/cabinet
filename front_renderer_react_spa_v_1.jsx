@@ -274,5 +274,38 @@ function Block({ name, bp, brand }){
 const btnStyle = { padding:'10px 12px', borderRadius:12, border:'1px solid rgba(255,255,255,.2)', background:'transparent', color:'#fff', cursor:'pointer' };
 const inpStyle = { padding:'10px 12px', borderRadius:12, border:'1px solid rgba(255,255,255,.2)', background:'rgba(255,255,255,.06)', color:'#fff' };
 
+
+function DevPanel(){
+  const [log,setLog] = React.useState([]);
+  React.useEffect(()=>{
+    const _fetch = window.fetch;
+    window.fetch = async (...args) => {
+      const t0 = performance.now();
+      try{
+        const res = await _fetch(...args);
+        const t1 = performance.now();
+        const url = (args[0]||'').toString();
+        const isApi = url.includes('endpoint=');
+        if (isApi){
+          setLog(l => [{t: new Date().toLocaleTimeString(), ms: (t1-t0).toFixed(0), url, status: res.status }, ...l].slice(0,20));
+        }
+        return res;
+      }catch(e){
+        setLog(l => [{t: new Date().toLocaleTimeString(), ms:'err', url: String(args[0]), status: 'ERR'}, ...l].slice(0,20));
+        throw e;
+      }
+    };
+    return ()=> (window.fetch = _fetch);
+  },[]);
+  return (
+    <div style={{position:'fixed', right:10, bottom:10, width:360, maxHeight:240, overflow:'auto',
+                 background:'rgba(0,0,0,.7)', color:'#fff', fontSize:12, padding:8, border:'1px solid rgba(255,255,255,.2)', borderRadius:10}}>
+      <div style={{opacity:.8, marginBottom:6}}>DEV</div>
+      {log.map((x,i)=> <div key={i} style={{marginBottom:4}}>[{x.t}] {x.status} {x.ms}ms<br/><span style={{opacity:.8}}>{x.url}</span></div>)}
+    </div>
+  );
+}
+
+
 /* ===== Export to window ===== */
 window.App = App;
