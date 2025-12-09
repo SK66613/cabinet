@@ -21,16 +21,20 @@
     .tag{display:inline-block;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);font-size:12px}
     .hr{height:1px;background:rgba(255,255,255,.08);margin:12px 0}
   </style>
+
+  <!-- ВАЖНО: укажи URL твоего GAS Web App и админ-ключ -->
   <script>
-    // ВСТАВЬ СВОЙ GAS URL и админ-ключ
-    window.API_BASE = "https://script.google.com/macros/s/XXXXXXXX/exec";
-    window.ADM_KEY  = "my_admin_key";
+    // пример: "https://script.google.com/macros/s/AKfycb.../exec"
+    window.API_BASE = window.API_BASE || "<<<PUT_YOUR_GAS_URL_HERE>>>";
+    // Script Property ADM_KEY в GAS должен совпадать:
+    window.ADM_KEY  = window.ADM_KEY  || "<<<PUT_ADMIN_KEY_HERE>>>";
   </script>
 </head>
 <body>
   <div class="wrap">
     <h2 class="h">Конструктор Mini-App — Мастер</h2>
     <div class="grid">
+      <!-- Левая панель: настройки -->
       <div class="panel">
         <div class="row">
           <div style="flex:1">
@@ -94,9 +98,12 @@
           <button class="btn ghost" id="btn-preview">Превью черновика</button>
           <button class="btn" id="btn-publish">Опубликовать (Live)</button>
         </div>
-        <div class="mut" style="margin-top:6px">Пишет в листы <code>blueprints</code>, <code>app_versions</code>, <code>products</code>, <code>loyalty_rules</code>.</div>
+        <div class="mut" style="margin-top:6px">
+          Пишет в листы <code>blueprints</code>, <code>app_versions</code>, <code>products</code>, <code>loyalty_rules</code>.
+        </div>
       </div>
 
+      <!-- Правая панель: превью -->
       <div class="panel">
         <div class="row" style="justify-content:space-between;align-items:center">
           <div>
