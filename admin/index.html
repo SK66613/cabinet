@@ -1,210 +1,224 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta charset="utf-8" />
   <title>Конструктор Mini-App — Мастер</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root{
-      --bg:#0b0f19; --card:#111726; --mut:#94a3b8; --brand:#2F6FED; --line:rgba(255,255,255,.08);
-      --txt:#e5e7eb; --chip:#1b2235;
+      --bg:#0c0f15; --panel:#121723; --mut:#aab3c2; --text:#e9eef6; --line:rgba(255,255,255,.08);
+      --brand:#2F6FED; --ok:#37d67a; --bad:#ff6b6b;
+      --radius:14px;
     }
     *{box-sizing:border-box}
-    body{margin:0; font:14px/1.5 Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial; color:var(--txt); background:var(--bg);}
-    .wrap{display:grid; grid-template-columns: 520px 1fr; gap:16px; padding:16px; min-height:100vh}
-    .panel{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px;}
-    h1{margin:0 0 12px; font-size:22px}
-    .row{display:grid; grid-template-columns: 1fr 1fr; gap:10px}
-    .mut{color:var(--mut); font-size:12px}
-    label{display:block; font-weight:600; margin:10px 0 6px}
-    .input, select{width:100%; background:#0e1525; border:1px solid var(--line); border-radius:12px; padding:10px 12px; color:var(--txt)}
-    .chip{display:inline-flex; gap:8px; align-items:center; padding:8px 10px; border:1px solid var(--line); border-radius:999px; background:var(--chip)}
-    .btn{cursor:pointer; padding:10px 12px; border:1px solid var(--line); background:#0e1525; color:#fff; border-radius:12px}
-    .btn.brand{background:linear-gradient(90deg,#3a6ffd,#2F6FED); border-color:transparent}
-    .btn.ghost{background:transparent}
-    .btn:disabled{opacity:.5; cursor:not-allowed}
-    .sec{margin:14px 0 12px; font-weight:800}
-    .grid-min{display:grid; grid-template-columns: 1fr 1fr; gap:8px}
-    .list{display:grid; gap:8px}
-    .li{border:1px dashed var(--line); border-radius:12px; padding:10px}
-    .bar{display:flex; gap:8px; align-items:center; justify-content:flex-start; flex-wrap:wrap}
-    .hr{height:1px; background:var(--line); margin:14px 0}
-    .kpi{display:grid; grid-template-columns: 1fr 1fr; gap:8px}
-    .k{border:1px solid var(--line); border-radius:12px; padding:10px}
-    .top{display:flex; align-items:center; gap:8px; margin-bottom:10px}
-    .mini{font-size:12px}
-    .right-head{display:flex; align-items:center; justify-content:space-between; gap:8px}
-    .iframe{width:100%; height:72vh; border:1px solid var(--line); border-radius:14px; background:#000}
-    .hint{font-size:12px; color:var(--mut)}
-    /* sortable chips */
-    .chip-sort{ user-select:none; cursor:grab; }
-    .chip-sort.dragging{ opacity:.6; transform:scale(.98); }
-    .chip-sort.drop-hint{ outline:2px dashed rgba(255,255,255,.35); }
-  </style>
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+    .app{display:grid;grid-template-columns:420px 1fr;gap:14px;min-height:100svh;padding:14px}
+    @media (max-width:1080px){ .app{grid-template-columns:1fr; padding:10px} }
 
-  <!-- Укажем твой воркер. ADM_KEY на клиенте не нужен. -->
-  <script>
-    window.API_BASE = "https://constructor-miniapp.cyberian13.workers.dev";
-    window.ADM_KEY  = "";
-  </script>
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px}
+    .bar{display:flex;align-items:center;gap:10px}
+    .mut{color:var(--mut)} .mini{font-size:12px}
+    .h{margin:0 0 8px;font-weight:900}
+    .btn{height:38px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:#1a2131;color:#fff;font-weight:800;cursor:pointer}
+    .btn:active{transform:translateY(1px)}
+    .btn-primary{background:linear-gradient(180deg,#77a7ff,#2F6FED);border:0;color:#0b0f18}
+    .btn-ghost{background:transparent}
+    .badge{display:inline-grid;place-items:center;height:26px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:#1a2131;font-weight:800}
+    .input,.select,textarea{width:100%;height:38px;border-radius:10px;border:1px solid var(--line);background:#0f1420;color:#fff;padding:0 10px}
+    textarea{height:auto;min-height:80px;padding:10px}
+    .cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .chip{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:#131b29;font-weight:700}
+    .grid{display:grid;gap:10px}
+    .g2{grid-template-columns:1fr 1fr}
+    .mut-hr{height:1px;background:var(--line);margin:10px 0}
+
+    /* Аккордеон */
+    .acc{display:grid;gap:10px}
+    .acc__item{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:#0f1420}
+    .acc__head{display:flex;align-items:center;gap:10px;padding:12px 12px;cursor:pointer;background:#121926}
+    .acc__head h3{margin:0;font:800 14px/1.2 Inter}
+    .acc__chev{margin-left:auto;opacity:.8}
+    .acc__body{display:none;padding:12px}
+    .acc__item.open .acc__body{display:block}
+    .acc__item.open .acc__chev{transform:rotate(90deg)}
+
+    /* Превью */
+    .preview{display:grid;gap:8px}
+    .toolbar{display:flex;justify-content:space-between;gap:10px}
+    .right-head{display:grid;gap:8px}
+    iframe{width:360px;max-width:100%;height:720px;border:1px solid var(--line);border-radius:16px;background:#000}
+    .w100 iframe{width:100%}
+    .notice{padding:10px;border:1px dashed var(--line);border-radius:10px;background:#0e1422;color:#cbd6e7}
+
+    .tabs{display:flex;gap:6px;flex-wrap:wrap}
+    .tab{height:30px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:#131b29;color:#fff;font-weight:800;cursor:pointer}
+    .tab[aria-pressed="true"]{background:#fff;color:#000;border-color:#fff}
+  </style>
 </head>
 <body>
-  <div class="wrap">
-    <!-- ЛЕВАЯ ПАНЕЛЬ: мастер -->
-    <div class="panel" id="left">
-      <h1>Конструктор Mini-App — Мастер</h1>
+<div class="app">
+  <!-- LEFT: Controls -->
+  <section class="card">
+    <header class="bar" style="justify-content:space-between;margin-bottom:6px">
+      <div class="bar">
+        <div class="badge">Конструктор Mini-App</div>
+      </div>
+      <div class="mut mini" id="api_hint"></div>
+    </header>
 
-      <!-- Шаг 0 -->
-      <div class="sec">Шаг 0. Проект</div>
-      <div class="row">
-        <div>
-          <label>App ID</label>
-          <input id="app_id" class="input" placeholder="beer_demo_1"/>
-          <div class="hint">Можно оставить пустым — сгенерируем из названия</div>
-        </div>
-        <div>
-          <label>Вертикаль</label>
-          <select id="vertical" class="input">
+    <div class="grid">
+      <div class="cols">
+        <label class="grid">
+          <span class="mut mini">App ID</span>
+          <input id="app_id" class="input" placeholder="например: beer_demo_1">
+        </label>
+        <label class="grid">
+          <span class="mut mini">Вертикаль</span>
+          <select id="vertical" class="select">
             <option value="beer">Пиво</option>
             <option value="coffee">Кофе</option>
             <option value="flowers">Цветы</option>
           </select>
-        </div>
+        </label>
       </div>
 
-      <!-- Шаг 1 -->
-      <div class="sec">Шаг 1. Бренд</div>
-      <div class="row">
-        <div>
-          <label>Название</label>
-          <input id="brand_name" class="input" placeholder="Beer Club"/>
-        </div>
-        <div>
-          <label>Цвет бренда</label>
-          <input id="brand_color" class="input" value="#2F6FED"/>
-        </div>
-      </div>
+      <!-- ACCORDION -->
+      <div class="acc" id="acc">
 
-      <!-- Шаг 2 -->
-      <div class="sec">Шаг 2. Меню (быстрый старт)</div>
-      <div class="row">
-        <div>
-          <label>Категория</label>
-          <input id="menu_cat" class="input" placeholder="beer/coffee/flowers"/>
-        </div>
-        <div>
-          <label>Позиция</label>
-          <input id="menu_title" class="input" placeholder="IPA #1"/>
-        </div>
-      </div>
-      <div class="row">
-        <div>
-          <label>Описание</label>
-          <input id="menu_sub" class="input" placeholder="хмелевая"/>
-        </div>
-        <div>
-          <label>Цена, ₽</label>
-          <input id="menu_price" type="number" class="input" placeholder="390"/>
-        </div>
-      </div>
-      <div class="bar" style="margin-top:8px">
-        <button id="add_pos" class="btn">Добавить позицию</button>
-        <button id="apply_preset_menu" class="btn ghost">Подставить шаблон меню</button>
-        <span class="mut mini" id="pos_count">0 позиций</span>
-      </div>
-      <div class="list" id="menu_list" style="margin-top:8px"></div>
-
-      <!-- Шаг 3 -->
-      <div class="sec">Шаг 3. Лояльность</div>
-      <div class="row">
-        <div>
-          <label>Слотов</label>
-          <input id="loyal_slots" type="number" class="input" value="6"/>
-        </div>
-        <div>
-          <label>PIN (демо)</label>
-          <input id="loyal_pin" class="input" value="1111"/>
-        </div>
-      </div>
-
-      <!-- Шаг 3a: Игры -->
-      <div class="sec">Шаг 3a. Игры</div>
-      <div class="row">
-        <div>
-          <label>Игра</label>
-          <select id="game_code" class="input">
-            <option value="">— без игры —</option>
-            <option value="flappy">Flappy Bee (встроенная)</option>
-            <option value="runner">Beer Runner (встроенная)</option>
-            <option value="match3">Hop-Match (iframe)</option>
-            <option value="quiz">Beer Quiz (встроенная)</option>
-          </select>
-        </div>
-        <div>
-          <label>Монеты за личный рекорд</label>
-          <input id="game_coins" type="number" class="input" value="10"/>
-        </div>
-      </div>
-      <div class="row">
-        <div>
-          <label>Лимит попыток/день</label>
-          <input id="game_limit" type="number" class="input" value="20"/>
-        </div>
-        <div>
-          <label>Источник (для iframe-игры)</label>
-          <input id="game_src" class="input" placeholder="https://cdn.domain/games/match3/index.html"/>
-          <div class="hint">Нужно только для игр типа iframe (например, Match-3)</div>
-        </div>
-      </div>
-
-      <!-- Шаг 4: Блоки -->
-      <div class="sec">Шаг 4. Блоки (перетащи, чтобы поменять порядок)</div>
-      <div id="blocks_sort" class="bar" style="gap:10px; flex-wrap:wrap"></div>
-      <div class="bar" style="margin-top:6px">
-        <button id="reset_order" class="btn ghost">Сбросить порядок</button>
-        <span class="hint">Включай/выключай галочкой. Тяни чипы мышкой, чтобы поменять порядок.</span>
-      </div>
-
-      <div class="hr"></div>
-      <div class="bar">
-        <button id="btn_save" class="btn brand">Создать черновик</button>
-        <button id="btn_preview" class="btn">Превью черновика</button>
-        <button id="btn_publish" class="btn ghost">Опубликовать LIVE</button>
-      </div>
-
-      <div class="hr"></div>
-      <div class="kpi">
-        <div class="k">
-          <div class="mut">Ссылка превью</div>
-          <div id="prev_url" class="mini" style="word-break:break-all">—</div>
-          <div class="bar" style="margin-top:6px">
-            <button id="open_prev" class="btn">Открыть отдельно</button>
-            <button id="copy_prev" class="btn ghost">Копировать</button>
+        <!-- Шаг 1 -->
+        <div class="acc__item open" data-acc="brand">
+          <div class="acc__head"><h3>Шаг 1. Бренд</h3><span class="acc__chev">›</span></div>
+          <div class="acc__body grid">
+            <div class="cols">
+              <label class="grid"><span class="mut mini">Название</span><input id="brand_name" class="input" placeholder="Beer Club"></label>
+              <label class="grid"><span class="mut mini">Цвет бренда</span><input id="brand_color" class="input" value="#2F6FED"></label>
+            </div>
+            <div class="cols">
+              <label class="grid"><span class="mut mini">Короткое описание</span><input id="brand_sub" class="input" placeholder="Свежие сорта, бонусы и призы"></label>
+              <div></div>
+            </div>
           </div>
         </div>
-        <div class="k">
-          <div class="mut">Публикация</div>
-          <div class="mini">После «Опубликовать» получите LIVE-ссылку</div>
-          <div id="live_url" class="mini" style="word-break:break-all; margin-top:4px">—</div>
+
+        <!-- Шаг 2 -->
+        <div class="acc__item" data-acc="menu">
+          <div class="acc__head"><h3>Шаг 2. Меню (быстрый старт)</h3><span class="acc__chev">›</span></div>
+          <div class="acc__body grid">
+            <div class="cols">
+              <label class="grid"><span class="mut mini">Категория</span><input id="menu_cat" class="input" placeholder="beer/coffee/bouquets"></label>
+              <label class="grid"><span class="mut mini">Позиция</span><input id="menu_title" class="input" placeholder="IPA #1"></label>
+            </div>
+            <div class="cols">
+              <label class="grid"><span class="mut mini">Описание</span><input id="menu_sub" class="input" placeholder="хмелевая"></label>
+              <label class="grid"><span class="mut mini">Цена, ₽</span><input id="menu_price" class="input" placeholder="390" inputmode="numeric"></label>
+            </div>
+            <div>
+              <button class="btn" id="add_pos">Добавить позицию</button>
+              <span class="mut mini" id="pos_count">0 позиций</span>
+            </div>
+          </div>
         </div>
+
+        <!-- Шаг 3 -->
+        <div class="acc__item" data-acc="loyalty">
+          <div class="acc__head"><h3>Шаг 3. Лояльность</h3><span class="acc__chev">›</span></div>
+          <div class="acc__body cols">
+            <label class="grid"><span class="mut mini">Слотов</span><input id="loyalty_slots" class="input" value="6" inputmode="numeric"></label>
+            <label class="grid"><span class="mut mini">PIN (демо)</span><input id="demo_pin" class="input" value="1111"></label>
+          </div>
+        </div>
+
+        <!-- Шаг 4 -->
+        <div class="acc__item" data-acc="blocks">
+          <div class="acc__head"><h3>Шаг 4. Блоки</h3><span class="acc__chev">›</span></div>
+          <div class="acc__body grid">
+            <div class="tabs" id="block_tabs">
+              <button class="tab" data-block="hero" aria-pressed="true">Hero</button>
+              <button class="tab" data-block="promo" aria-pressed="true">Promo</button>
+              <button class="tab" data-block="menuGrid" aria-pressed="true">MenuGrid</button>
+              <button class="tab" data-block="loyaltyCard" aria-pressed="true">Loyalty</button>
+              <button class="tab" data-block="stampShelf" aria-pressed="true">Passport</button>
+              <button class="tab" data-block="bonusWheel" aria-pressed="true">Колесо</button>
+              <button class="tab" data-block="profile" aria-pressed="true">Профиль</button>
+            </div>
+            <div class="mut mini">Кликаешь по чипам — включаешь/выключаешь блоки. Порядок: Hero → Promo → MenuGrid → Loyalty → Passport → Wheel → Profile.</div>
+          </div>
+        </div>
+
+        <!-- Шаг 5 -->
+        <div class="acc__item" data-acc="game">
+          <div class="acc__head"><h3>Шаг 5. Игры</h3><span class="acc__chev">›</span></div>
+          <div class="acc__body grid">
+            <div class="cols">
+              <label class="grid">
+                <span class="mut mini">Игра</span>
+                <select id="game_code" class="select">
+                  <option value="">— без игры —</option>
+                  <option value="flappy">Bumblebee (embedded)</option>
+                  <!-- задел под другие -->
+                </select>
+              </label>
+              <label class="grid"><span class="mut mini">Попыток/день</span><input id="game_attempts" class="input" value="20" inputmode="numeric"></label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Шаг 6 -->
+        <div class="acc__item" data-acc="publish">
+          <div class="acc__head"><h3>Шаг 6. Черновик / Публикация</h3><span class="acc__chev">›</span></div>
+          <div class="acc__body grid">
+            <div class="bar">
+              <button class="btn" id="save_draft">Создать черновик</button>
+              <button class="btn" id="preview_btn">Превью черновика</button>
+              <button class="btn btn-primary" id="publish_btn">Опубликовать</button>
+            </div>
+            <div class="notice mini">Данные сохраняются в GAS через ваш Worker. Превью берёт блюпринт «как есть» и рендерит справа.</div>
+          </div>
+        </div>
+
       </div>
     </div>
+  </section>
 
-    <!-- ПРАВАЯ ПАНЕЛЬ: превью -->
-    <div class="panel">
-      <div class="right-head">
-        <div class="top">
-          <div class="chip" style="background:rgba(47,111,237,.15); border-color:transparent"><b>Превью mini-аппы</b> <span id="tag_draft" class="mut">draft</span></div>
+  <!-- RIGHT: Preview -->
+  <section class="right-head">
+    <div class="card preview">
+      <div class="toolbar">
+        <div class="bar">
+          <label class="chip"><span class="mut mini">Устройство</span>
+            <select id="pv_device" class="select" style="width:auto">
+              <option value="360">Телефон (360px)</option>
+              <option value="414">Телефон+ (414px)</option>
+              <option value="768">Планшет (768px)</option>
+              <option value="100%">Ширина панели</option>
+            </select>
+          </label>
+          <label class="chip"><input type="checkbox" id="pv_tgchrome" checked> <span class="mut mini">TG-шапка</span></label>
+          <label class="chip"><input type="checkbox" id="pv_demo" checked> <span class="mut mini">Демо-данные</span></label>
         </div>
-        <div class="mut mini" id="badge_app">app_id=—</div>
+        <div class="bar">
+          <label class="chip"><span class="mut mini">Вкладка</span>
+            <select id="pv_tab" class="select" style="width:auto">
+              <option value="/">Главная</option>
+              <option value="/tournament">Турнир</option>
+              <option value="/play">Играть</option>
+              <option value="/bonuses">Бонусы</option>
+              <option value="/profile">Профиль</option>
+            </select>
+          </label>
+          <button class="btn" id="open_separate">Открыть отдельно</button>
+        </div>
       </div>
-      <iframe id="frame" class="iframe" src="about:blank"></iframe>
-      <div class="hint" style="margin-top:8px">
-        Превью загружает блюпринт из GAS через ваш воркер, рендер — <code>/mini/index.html</code>.
-      </div>
+      <div class="mut mini" id="prev_url" style="word-break:break-all"></div>
+      <div id="frame_wrap"><iframe id="frame" title="Превью мини-аппы"></iframe></div>
     </div>
-  </div>
+  </section>
+</div>
 
-  <script src="./admin.js"></script>
+<script>
+  window.API_BASE = window.API_BASE || "https://constructor-miniapp.cyberian13.workers.dev";
+</script>
+<script src="./admin.js"></script>
 </body>
 </html>
