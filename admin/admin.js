@@ -48,7 +48,7 @@
   }
 
   // --- Preview URL builder (points to your user SPA) ---
-  const PREVIEW_PATH = '/index.html'; // поменяй на '/cabinet.html' если нужно
+  const PREVIEW_PATH = '/mini/index.html'; // поменяй на '/cabinet.html' если нужно
 
   function refreshPreviewUrl(){
     const app_id = $('#app_id').value.trim();
