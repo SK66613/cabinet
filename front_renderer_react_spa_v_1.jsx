@@ -20,10 +20,14 @@ function demoTgId(){
 async function apiGet(path, params={}){
   const u = new URL(API_BASE);
   u.searchParams.set('endpoint', path);
+  // прокинем tg_id как query (без хедеров — это «простой» запрос)
+  u.searchParams.set('tg_id', demoTgId());
   Object.entries(params).forEach(([k,v]) => v!=null && u.searchParams.set(k, v));
-  const r = await fetch(u.toString(), { headers: { 'X-TG-ID': demoTgId() } });
+
+  const r = await fetch(u.toString());             // ← без headers
   return r.json();
 }
+
 async function apiPost(path, body={}){
   const u = new URL(API_BASE);
   u.searchParams.set('endpoint', path);
