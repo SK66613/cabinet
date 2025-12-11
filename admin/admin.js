@@ -16,7 +16,7 @@ const GAMES = {
 
 const S = {
   app_id:'', vertical:'beer',
-  brand:{ name:'', color:'#2F6FED', sub:'' },
+  brand:{ name:'', color:'#2F6FED', sub:'', hero:'', logo:'', cta:'О нас', headline:'KEY WEST’S Craft Beer DESTINATION' },
   positions:[],
   loyalty:{ slots:6, demo_pin:'1111' },
   blocks:{ hero:true, promo:true, menuGrid:true, loyaltyCard:true, stampShelf:true, bonusWheel:true, profile:true },
@@ -33,12 +33,13 @@ function demoTgId(){
 
 /* ---------- API helper (через воркер) ---------- */
 async function api(path, params={}){
+  const hasBody = params && typeof params==='object' && (params.doc || params.json);
   const u = new URL(API_BASE);
   u.searchParams.set('endpoint', path);
-  // «пингуем» как демо-пользователь
-  u.searchParams.set('tg_id', demoTgId());
-  Object.entries(params).forEach(([k,v]) => v!=null && u.searchParams.set(k, v));
-  const r = await fetch(u.toString());
+  u.searchParams.set('tg_id', demoTgId());            // «демо-пользователь» для предзаполнения
+  if (!hasBody) Object.entries(params).forEach(([k,v]) => v!=null && u.searchParams.set(k, v));
+  const opt = hasBody ? { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify(params) } : {};
+  const r = await fetch(u.toString(), opt);
   return r.json();
 }
 
@@ -49,9 +50,13 @@ function chipToggle(el){
   el.setAttribute('aria-pressed', (!on).toString());
 }
 function collectBlocksOrder(){
-  // базовый фиксированный порядок, включаем только отмеченные
   const order = ['hero','promo','menuGrid','loyaltyCard','stampShelf','bonusWheel','profile'];
   return order.filter(k => S.blocks[k]);
+}
+function setHeroStatus(msg, ok){
+  const el = $('#hero_status');
+  el.textContent = msg || '';
+  el.style.color = ok===true ? '#37d67a' : ok===false ? '#ff6b6b' : '';
 }
 
 /* ---------- Blueprint ---------- */
@@ -85,11 +90,32 @@ function makeBlueprint(){
   ];
 
   const bp = {
-    app:   { name, theme:{ brand: color }, subtitle },
+    app:   {
+      name,
+      theme:{ brand: color,
+        tokens:{
+          bg:'#0c0f15', card:'#121723', chip:'#1b2235',
+          text:'#e9eef6', mut:'#aab3c2', line:'rgba(255,255,255,.08)',
+          nav:'glass', radius:14
+        }
+      },
+      subtitle
+    },
     nav:   { type:'tabs', routes: routes.map(r=>({ path:r.path, title:r.title, icon:r.icon })) },
     routes: routes.map(r=>({ path:r.path, blocks:r.blocks })),
     blocks: {
-      hero:        { props:{ title: (S.vertical==='coffee'?'Кофе рядом с вами':'Заходи на дегустацию'), subtitle } },
+      hero: {
+        props:{
+          title:    (S.brand.headline || (S.vertical==='coffee'?'Кофе рядом с вами':'Заходи на дегустацию')),
+          subtitle,
+          image:    (S.brand.hero || '/img/packs/beer/hero_wheat.jpg'),
+          logo:     (S.brand.logo || ''),
+          cta:      { text:(S.brand.cta || 'О нас'), href:'/about' },
+          shade:    'linear-gradient(180deg, rgba(0,0,0,0.0) 40%, rgba(0,0,0,0.55) 100%)',
+          height:   240,
+          radius:   18
+        }
+      },
       promo:       { props:{ items: PRESETS[S.vertical]?.promo || [] } },
       menuGrid:    { props:{ category: PRESETS[S.vertical]?.category || $('#menu_cat').value.trim() || 'beer' } },
       loyaltyCard: { props:{ slots: Number($('#loyalty_slots').value||6) } },
@@ -119,7 +145,7 @@ function makeBlueprint(){
 
 /* ---------- Preview URL ---------- */
 function makeMiniUrl({ app_id, preview='draft' }){
-  const base = location.origin;                   // твой GitHub Pages
+  const base = location.origin;
   const api  = API_BASE;
   const u = new URL(base + '/mini/index.html');
   u.searchParams.set('app_id', app_id);
@@ -161,8 +187,76 @@ function bindControls(){
   // верх
   on($('#app_id'),'input', buildPreviewUrl);
   on($('#vertical'),'change', e=>{ S.vertical = e.target.value; buildPreviewUrl(); });
+
   // бренд
-  ['brand_name','brand_color','brand_sub'].forEach(id => on($( '#'+id ), 'input', buildPreviewUrl));
+  ['brand_name','brand_color','brand_sub','brand_hero','brand_logo','brand_cta','brand_headline']
+    .forEach(id => on($('#'+id), 'input', e=>{
+      const v = e.target.value;
+      if (id==='brand_color') S.brand.color = v;
+      if (id==='brand_sub')   S.brand.sub   = v;
+      if (id==='brand_hero')  S.brand.hero  = v;
+      if (id==='brand_logo')  S.brand.logo  = v;
+      if (id==='brand_cta')   S.brand.cta   = v;
+      if (id==='brand_headline') S.brand.headline = v;
+      buildPreviewUrl();
+    }));
+
+  // загрузка баннера: локальный предпросмотр
+  on($('#hero_file'), 'change', async (e)=>{
+    setHeroStatus('');
+    const f = e.target.files?.[0];
+    if (!f){ $('#hero_thumb').style.display='none'; return; }
+    const okType = /^image\/(png|jpe?g|webp|avif)$/i.test(f.type);
+    if (!okType){ setHeroStatus('Неподдерживаемый тип файла', false); return; }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const url = reader.result; // dataURL
+      const img = $('#hero_thumb');
+      img.src = url; img.style.display='block';
+      setHeroStatus('Готово: можно «Использовать для превью»', true);
+      S.__localHeroDataUrl = url;
+    };
+    reader.readAsDataURL(f);
+  });
+
+  on($('#hero_use_local'),'click', ()=>{
+    if (!S.__localHeroDataUrl){ setHeroStatus('Сначала выбери файл', false); return; }
+    $('#brand_hero').value = S.__localHeroDataUrl;
+    S.brand.hero = S.__localHeroDataUrl;
+    setHeroStatus('Подставили локальное превью (DataURL)', true);
+    buildPreviewUrl();
+  });
+
+  // загрузка в CDN через Worker (R2)
+  on($('#hero_upload_cdn'),'click', async ()=>{
+    try{
+      setHeroStatus('Загрузка…');
+      const file = $('#hero_file').files?.[0];
+      if (!file){ setHeroStatus('Файл не выбран', false); return; }
+
+      const appId = ($('#app_id').value.trim() || slug($('#brand_name').value||'app'));
+      const u = new URL(API_BASE);
+      u.searchParams.set('endpoint', '/admin/upload_hero');
+      u.searchParams.set('app_id', appId);
+
+      const fd = new FormData();
+      fd.append('file', file, file.name);
+
+      const r = await fetch(u.toString(), { method:'POST', body: fd });
+      const j = await r.json();
+
+      if (!j?.ok || !j?.url){ setHeroStatus('Ошибка загрузки', false); return; }
+
+      $('#brand_hero').value = j.url;
+      S.brand.hero = j.url;
+      setHeroStatus('Загружено в CDN', true);
+      buildPreviewUrl();
+    }catch(e){
+      setHeroStatus('Ошибка: '+(e?.message||e), false);
+    }
+  });
+
   // меню
   on($('#add_pos'),'click', ()=>{
     const pos = {
@@ -173,6 +267,7 @@ function bindControls(){
     };
     if (pos.title){ S.positions.push(pos); $('#pos_count').textContent = `${S.positions.length} позиций`; }
   });
+
   // лояльность
   on($('#loyalty_slots'),'input', e=>{ S.loyalty.slots = Number(e.target.value||6); buildPreviewUrl(); });
   on($('#demo_pin'),'input', e=>{ S.loyalty.demo_pin = e.target.value.trim(); });
@@ -226,10 +321,19 @@ function toast(msg, ok=false){
 /* ---------- Init ---------- */
 function init(){
   $('#api_hint').textContent = API_BASE ? API_BASE : 'API не задан (window.API_BASE)';
-  // дефолты
+
+  // дефолты для «как на скрине»
+  if (!$('#brand_hero').value) $('#brand_hero').value = '/img/packs/beer/hero_wheat.jpg';
+  if (!$('#brand_logo').value) $('#brand_logo').value = '/img/packs/beer/logo_beer.png';
+  S.brand.hero = $('#brand_hero').value.trim();
+  S.brand.logo = $('#brand_logo').value.trim();
+  S.brand.cta  = ($('#brand_cta').value||'О нас').trim();
+  S.brand.headline = ($('#brand_headline').value||S.brand.headline).trim();
+
   $('#brand_color').value = S.brand.color;
   $('#game_code').value = S.game.code;
-  // выставим aria-pressed для чипов блоков
+
+  // aria-pressed для чипов блоков
   Array.from($('#block_tabs').querySelectorAll('.tab')).forEach(b=>{
     const key = b.dataset.block; b.setAttribute('aria-pressed', !!S.blocks[key]);
   });
