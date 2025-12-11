@@ -37,11 +37,12 @@
   }
 
   const BASE_CSS = `
-    :root{ --tabH:64px; --navGap:12px; --wrapPadX:14px; --wrapPadTop:14px;
+    :root{ --tabH:64px; --navGap:12px; --wrapPadX:14px; --wrapPadTop:14px; --appW:428px;
       --card-bg: rgba(255,255,255,.05); --line: rgba(255,255,255,.10); --mut:#aab3c2; --text:#fff; --radius:16px; }
     html,body{height:100%}
     body{margin:0;background:#0b0f16;color:var(--text);font:14px/1.5 Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
     .wrap{ min-height:100svh; padding: var(--wrapPadTop) var(--wrapPadX) calc(var(--tabH) + var(--navGap) + env(safe-area-inset-bottom,0) + 22px); }
+    @media (min-width:900px){ body{ display:grid; place-items:center; } .wrap{ width:100%; max-width:var(--appW); } }
     main>section.page{ display:none } main>section.page.active{ display:block }
     .card{ background:var(--card-bg); border:1px solid var(--line); border-radius:var(--radius); padding:14px; margin:12px 0; }
     .h{ font-weight:900; margin:4px 0 10px; }
@@ -165,7 +166,7 @@
     for (const key of (blocks||[])){
       const spec = (bp.blocks && bp.blocks[key]) || {};
       if (spec.type === 'htmlEmbed'){
-        const d = el('div','html-embed card'); d.innerHTML = (spec.props && spec.props.html) || ''; host.appendChild(d);
+        const d = el('div','html-embed'); d.innerHTML = (spec.props && spec.props.html) || ''; host.appendChild(d);
       }else{
         host.appendChild(renderBuiltInBlock(key, spec.props||{}));
       }
