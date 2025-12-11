@@ -1,6 +1,6 @@
 window.BUILTIN_TEMPLATES = window.BUILTIN_TEMPLATES || {};
 window.BUILTIN_TEMPLATES["Beer Main"] = {
-  sections:[
+  sections:[ 
     { key:"html__intro__0", inner:`
 <h2 class="intro__h1">Привет друг!</h2>
 <p class="intro__p">Здесь культура крафта! Это приложение про игры, бонусы и знание пивных стилей.
