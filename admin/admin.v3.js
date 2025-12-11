@@ -1,11 +1,9 @@
-<!-- admin.v3.js -->
 <script>
 (() => {
   const S = { vertical: 'beer', template: null, game: {}, lastDraftVer: null };
 
   /* ---------- helpers ---------- */
   const $ = (q, r = document) => r.querySelector(q);
-  const el = (tag, cls) => { const n = document.createElement(tag); if (cls) n.className = cls; return n; };
   const j = (x) => JSON.stringify(x);
 
   const dom = {
@@ -20,34 +18,34 @@
     prevUrl:     $('#prev_url'),
   };
 
-  function toast(msg){ console.log('[admin]', msg); }
   function must(v, m){ if (!v) throw new Error(m); return v; }
+  function toast(msg){ console.log('[admin]', msg); }
 
   /* ---------- templates ---------- */
-  // Ожидаем window.BUILTIN_TEMPLATES[ key ] = { sections:[ {key, inner, hidden?}, … ] }
+  // Ожидаем window.BUILTIN_TEMPLATES[key] = { sections:[ {key, inner, hidden?}, … ] }
   function applyBuiltinTemplate(key){
     const T = (window.BUILTIN_TEMPLATES && window.BUILTIN_TEMPLATES[key]);
     if (!T || !Array.isArray(T.sections) || !T.sections.length){
       throw new Error('NO_TEMPLATE_SECTIONS:'+key);
     }
     S.template = { key, sections: T.sections.map(s => ({...s})) };
-    // Тема, если объявлена
+
+    // автоподстановка темы
     if (window.BUILTIN_THEMES && window.BUILTIN_THEMES[key]){
       dom.cssBox.value = window.BUILTIN_THEMES[key];
     }
     toast('Шаблон применён: '+key);
   }
 
-  /* ---------- blueprint ---------- */
   function collectBlocksOrderFromTemplate(){
     if (!S.template) return [];
     return S.template.sections.filter(s => !s.hidden).map(s => s.key);
   }
 
+  /* ---------- blueprint ---------- */
   function makeBlueprint(){
-    const name   = (dom.appId.value || 'Beer Demo').trim();
+    const name     = (dom.appId.value || 'Beer Demo').trim();
     const themeCss = dom.cssBox.value || '';
-
     const wantGame = !!S.game.code;
 
     const routesBase = [
@@ -60,7 +58,8 @@
 
     const bp = {
       app:   { name, theme:{ css: themeCss, brand:'#3d7eff', skin:'dark-glass' }, subtitle:'' },
-      nav:   { type:'tabs', position:'bottom', routes: routesBase.map(r => ({ path:r.path, title:r.title, icon:r.icon })) },
+      nav:   { type:'tabs', position:'bottom',
+               routes: routesBase.map(r => ({ path:r.path, title:r.title, icon:r.icon })) },
       routes: routesBase.map(r => ({ path:r.path, blocks:r.blocks })),
       blocks: {
         profile:     { props:{} },
@@ -73,22 +72,18 @@
       games: {}
     };
 
-    // Вставляем HTML-секции шаблона ТОЛЬКО на главную
+    // HTML секции на главную
     if (S.template && S.template.key){
       const htmlKeys = collectBlocksOrderFromTemplate();
-      // регистрируем htmlEmbed
       htmlKeys.forEach(k => {
         bp.blocks[k] = { type:'htmlEmbed', props:{ html: (S.template.sections.find(s=>s.key===k)?.inner || '') } };
       });
-      // заменяем главную
       bp.routes = bp.routes.filter(r => r.path !== '/');
       bp.routes.unshift({ path:'/', blocks: htmlKeys });
     }
 
     if (S.game.code){
-      bp.games[S.game.code] = {
-        enabled:true, title:S.game.code, engine:'embedded', score_unit:'pts', attempts_daily: 20
-      };
+      bp.games[S.game.code] = { enabled:true, title:S.game.code, engine:'embedded', score_unit:'pts', attempts_daily:20 };
     }
 
     return bp;
@@ -103,9 +98,9 @@
   }
 
   async function saveDraft(){
-    const app_id = must(dom.appId.value.trim(), 'App ID?');
-    const blueprint = makeBlueprint();
-    const url = buildAdminUrl('/admin/blueprint/save_draft');
+    const app_id   = must(dom.appId.value.trim(), 'App ID?');
+    const blueprint= makeBlueprint();
+    const url      = buildAdminUrl('/admin/blueprint/save_draft');
 
     const res = await fetch(url, {
       method:'POST',
@@ -122,6 +117,7 @@
     updatePreview();
   }
 
+  /* ---------- preview ---------- */
   function previewUrl(){
     const app_id = dom.appId.value.trim() || 'beer';
     const api    = must(dom.apiBase.value.trim(), 'API Base?');
@@ -147,7 +143,8 @@
     try{
       must(key, 'Выбери шаблон');
       applyBuiltinTemplate(key);
-      toast('Тема подключена, не забудь «Создать черновик».');
+      // помечаем CSS как изменённый, чтобы пользователь не забыл сохранить
+      dom.cssBox.style.outline = '2px solid #f9b24d';
     }catch(e){
       alert(e.message); console.error(e);
     }
@@ -175,12 +172,6 @@
 
   dom.apiBase.addEventListener('change', updatePreview);
   dom.appId.addEventListener('change', updatePreview);
-
-  // авто-обновление превью при вводе CSS (без сохранения)
-  dom.cssBox.addEventListener('input', () => {
-    // просто подсказка, что нужно сохранить
-    dom.cssBox.style.outline = '2px solid #f9b24d';
-  });
 
   // первый запуск
   updatePreview();
