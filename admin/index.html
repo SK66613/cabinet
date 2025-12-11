@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Конструктор Mini-App</title>
+  <title>Конструктор Mini‑App</title>
   <style>
     body{margin:0;background:#0b0f16;color:#eaf2ff;font:14px/1.5 Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
     .layout{display:grid;grid-template-columns:420px 1fr;gap:16px;min-height:100vh;padding:16px}
@@ -33,55 +33,20 @@
           </select>
           <button id="tpl_apply" class="btn">Применить</button>
         </div>
-
-        <div class="mut">
-          Главная соберётся из HTML-секций шаблона. Остальные вкладки: Турнир/Играть/Бонусы/Профиль.
-        </div>
-
-        <div class="row">
-          <label>App ID
-            <input id="app_id" placeholder="beer_demo_1" value="beer_demo_1" />
-          </label>
-        </div>
-
-        <div class="row">
-          <label>API Base (URL воркера)
-            <input id="api_base_input" placeholder="https://your-worker.workers.dev" />
-          </label>
-          <div id="api_hint" class="mut"></div>
-        </div>
-
-        <div class="row">
-          <label>Доп. CSS темы</label>
-          <textarea id="theme_css" placeholder="/* Вставьте сюда CSS темы */"></textarea>
-        </div>
-
-        <div class="row grid2">
-          <button id="save_draft" class="btn">Создать черновик</button>
-          <button id="publish_btn" class="btn" style="background:#37d67a">Опубликовать</button>
-        </div>
+        <div class="mut">Главная соберётся из HTML‑секций. Остальные вкладки: Турнир / Играть / Бонусы / Профиль.</div>
+        <div class="row"><label>App ID <input id="app_id" placeholder="beer_demo_1" value="beer_demo_1"/></label></div>
+        <div class="row"><label>API Base (URL воркера) <input id="api_base_input" placeholder="https://your-worker.workers.dev"/></label><div id="api_hint" class="mut"></div></div>
+        <div class="row"><label>Доп. CSS темы</label><textarea id="theme_css" placeholder="/* Скопируй сюда theme_beer_main.css для 1:1 вида */"></textarea></div>
+        <div class="row grid2"><button id="save_draft" class="btn">Создать черновик</button><button id="publish_btn" class="btn" style="background:#37d67a">Опубликовать</button></div>
       </div>
     </div>
-
     <div class="panel">
       <h3>Превью</h3>
-      <div class="body">
-        <div class="mut" id="prev_url"></div>
-        <iframe id="frame" title="Mini Preview"></iframe>
-      </div>
+      <div class="body"><div class="mut" id="prev_url"></div><iframe id="frame" title="Mini Preview"></iframe></div>
     </div>
   </div>
-
-  <!-- ВАЖНО: сперва шаблоны, затем админ-логика -->
   <script src="templates.js"></script>
   <script src="templates.beer_main.js"></script>
-
-  <!-- (опционально) автоподстановка темы Beer Main: вставь сюда свой CSS темы внутри бэктиков -->
-  <script>
-    window.BUILTIN_THEMES = window.BUILTIN_THEMES || {};
-    window.BUILTIN_THEMES["Beer Main"] = window.BUILTIN_THEMES["Beer Main"] || `/* вставь сюда theme_beer_main.css при желании автозаполнения */`;
-  </script>
-
   <script src="admin.v3.js"></script>
 </body>
 </html>
