@@ -1,4 +1,4 @@
-/* ====== Конструктор Mini‑App · admin.v2.js — autosave + editable API + correct POST endpoints (12.12.2025) ====== */
+/* ====== Конструктор Mini-App · admin.js — v2 autosave + layout + editable API ====== */
 const $ = sel => document.querySelector(sel);
 const on = (el, ev, fn) => el && el.addEventListener(ev, fn, {passive:true});
 
@@ -16,8 +16,6 @@ const on = (el, ev, fn) => el && el.addEventListener(ev, fn, {passive:true});
 })();
 
 function apiBase(){ return (window.API_BASE || '').replace(/\/+$/,''); }
-
-/* ---------- API helpers ---------- */
 function demoTgId(){
   let id = localStorage.getItem('demo_tg_id');
   if (!id){ id = String(Math.floor(Math.random()*1e9)); localStorage.setItem('demo_tg_id', id); }
@@ -30,17 +28,6 @@ async function api(path, params={}){
   u.searchParams.set('tg_id', demoTgId());
   Object.entries(params).forEach(([k,v]) => v!=null && u.searchParams.set(k, v));
   const r = await fetch(u.toString());
-  return r.json();
-}
-async function apiPost(path, body={}){
-  const base = apiBase() || location.origin;
-  const u = new URL(base);
-  u.searchParams.set('endpoint', path);
-  const r = await fetch(u.toString(), {
-    method:'POST',
-    headers:{ 'content-type':'application/json' },
-    body: JSON.stringify(body)
-  });
   return r.json();
 }
 function debounce(fn, ms=700){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
@@ -165,25 +152,25 @@ function makeBlueprint(){
   const heroFit    = $('#hero_fit').value;
   const themeCss   = $('#theme_css')?.value || '';
 
-  const home = collectBlocksOrder().slice();
   const wantGame = !!S.game.code;
 
-  const routes = [
-    { path:'/',            title:'Главная',   icon:'home',    blocks: home },
+  // базовые маршруты (как в мини-аппе)
+  const routesBase = [
+    { path:'/',            title:'Главная',   icon:'home',    blocks: collectBlocksOrder() },
     { path:'/tournament',  title:'Турнир',    icon:'cup',     blocks: wantGame ? ['leaderboard'] : [] },
     { path:'/play',        title:'Играть',    icon:'gamepad', blocks: wantGame ? ['gamesPicker'] : [] },
     { path:'/bonuses',     title:'Бонусы',    icon:'gift',    blocks: (S.blocks.bonusWheel||S.blocks.stampShelf) ? ['bonusWheel','stampShelf'] : [] },
     { path:'/profile',     title:'Профиль',   icon:'user',    blocks: ['profile'] },
   ];
 
+  // каркас блюпринта
   const bp = {
     app:   { name, theme:{ brand: color, skin, css: themeCss }, subtitle },
-    nav:   { type:'tabs', routes: routes.map(r=>({ path:r.path, title:r.title, icon:r.icon })) },
-    routes: routes.map(r=>({ path:r.path, blocks:r.blocks })),
+    nav:   { type:'tabs', position:'bottom', routes: routesBase.map(r=>({ path:r.path, title:r.title, icon:r.icon })) },
+    routes: routesBase.map(r=>({ path:r.path, blocks:r.blocks })),
     blocks: {
       hero:        { props:{ title: ($('#hero_title').value.trim() || (pr.hero?.title || 'Заходи на дегустацию')),
-                             subtitle,
-                             cover: heroCover, align:heroAlign, coverFit:heroFit } },
+                             subtitle, cover: heroCover, align:heroAlign, coverFit:heroFit } },
       promo:       { props:{ items: PRESETS[S.vertical]?.promo || [] } },
       menuGrid:    { props:{ category: PRESETS[S.vertical]?.category || $('#menu_cat').value.trim() || 'beer' } },
       loyaltyCard: { props:{ slots: Number($('#loyalty_slots').value||6) } },
@@ -206,12 +193,17 @@ function makeBlueprint(){
     };
   }
 
-  // встроенный шаблон: 1:1 html-блоки
-  if (S.template.sections?.length){
-    const vis = S.template.sections.filter(s=>!s.hidden);
+  // === ВСТРОЕННЫЙ ШАБЛОН ===
+  // Если выбран ключ шаблона (S.template.key), то главная СТРОГО из html__ секций.
+  if (S.template && S.template.key){
+    const vis = (S.template.sections||[]).filter(s=>!s.hidden);
     const htmlBlockKeys = vis.map(s => s.key);
+
+    // заменяем только главную страницу; остальные оставляем как есть (Турнир/Играть/Бонусы/Профиль)
     bp.routes = bp.routes.filter(r => r.path !== '/');
     bp.routes.unshift({ path:'/', blocks: htmlBlockKeys });
+
+    // регистрируем htmlEmbed-блоки
     for (const s of vis){
       bp.blocks[s.key] = { type:'htmlEmbed', props:{ html: s.inner } };
     }
@@ -222,6 +214,7 @@ function makeBlueprint(){
 
 /* ---------- Preview URL ---------- */
 function makeMiniUrl({ app_id, preview='draft' }){
+  // iframe указывает на твой mini/index.html на текущем домене
   const base = new URL(location.origin + (location.pathname.endsWith('/')? '' : '/'));
   const u = new URL(base.origin + '/mini/index.html');
   const api = apiBase();
@@ -317,20 +310,14 @@ function bindControls(){
 async function saveDraft(){
   const app_id = ($('#app_id').value.trim() || slug($('#brand_name').value||'app'));
   const bp = makeBlueprint();
-  // правильный маршрут + правильный body (см. GAS)
-  const r = await apiPost('/admin/blueprint/save_draft', {
-    app_id,
-    vertical: S.vertical || 'beer',
-    blueprint: bp
-  });
-  toast(r.ok? 'Черновик сохранён':'Ошибка сохранения: '+(r?.error||''), !!r?.ok);
+  const r = await api('/admin/blueprint_save', { app_id, doc: JSON.stringify(bp) });
+  toast(r.ok? 'Черновик сохранён':'Ошибка сохранения', r.ok);
   buildPreviewUrl();
-  return !!r?.ok;
 }
 async function publishLive(){
   const app_id = ($('#app_id').value.trim() || slug($('#brand_name').value||'app'));
-  const r = await apiPost('/admin/publish', { app_id, to: 'live' });
-  toast(r.ok? ('Опубликовано v'+(r?.data?.version||'')) : ('Ошибка публикации: '+(r?.error||'')), !!r?.ok);
+  const r = await api('/admin/publish', { app_id });
+  toast(r.ok? 'Опубликовано в LIVE':'Ошибка публикации', r.ok);
 }
 
 function toast(msg, ok=false){
