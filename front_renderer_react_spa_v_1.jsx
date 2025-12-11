@@ -1,6 +1,4 @@
-/* front_renderer_react_spa_v_1.jsx — обновление 11.12.2025
-   UMD + React (babel). Экспортит window.App.
-*/
+/* front_renderer_react_spa_v_1.jsx — templates + htmlEmbed + theme.css — 11.12.2025 */
 const { useEffect, useMemo, useState } = React;
 
 /* ========= Global params ========= */
@@ -91,31 +89,50 @@ const skinCss = {
     .mut{opacity:.75}
   `
 };
+function ThemeCss({css}){ return css ? <style dangerouslySetInnerHTML={{__html: css}}/> : null; }
+
+/* ========= HTML Embed ========= */
+function sanitizeHtml(html){
+  const allowed = /^(div|section|span|p|h1|h2|h3|h4|h5|h6|ul|ol|li|img|a|button|strong|em|small|br|hr|svg|path|header|footer|main|nav|article|aside|figure|figcaption)$/i;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html || '';
+
+  (function walk(node){
+    if (node.nodeType === 1){
+      const tag = node.tagName.toLowerCase();
+      if (!allowed.test(tag)){
+        node.replaceWith(...Array.from(node.childNodes));
+        return;
+      }
+      for (const attr of Array.from(node.attributes)){
+        const n = attr.name.toLowerCase();
+        if (n.startsWith('on') || n === 'srcdoc' || (n === 'href' && String(attr.value).trim().toLowerCase().startsWith('javascript:'))){
+          node.removeAttribute(attr.name);
+        }
+      }
+    }
+    for (const ch of Array.from(node.childNodes)) walk(ch);
+  })(tmp);
+
+  return tmp.innerHTML;
+}
+function HtmlEmbed({ html }){
+  const [safe, setSafe] = React.useState('');
+  React.useEffect(()=>{ setSafe(sanitizeHtml(html || '')); }, [html]);
+  return <div dangerouslySetInnerHTML={{ __html: safe }}/>;
+}
 
 /* ========= UI Blocks ========= */
-function Hero({
-  title="Заходи на дегустацию",
-  subtitle="Свежие сорта, бонусы и призы",
-  brand="#2F6FED",
-  cover="",           // URL
-  coverFit="cover",   // 'cover'|'contain'
-  align="left"        // 'left'|'center'|'right'
-}){
+function Hero({ title="Заходи на дегустацию", subtitle="Свежие сорта, бонусы и призы", brand="#2F6FED", cover="", coverFit="cover", align="left" }){
   const ai = align==='center'?'center':align==='right'?'flex-end':'flex-start';
   return (
     <div style={{padding:'24px'}}>
       <div className="card" style={{padding:'0', overflow:'hidden', position:'relative'}}>
         {!!cover && (
-          <div style={{
-            height:160, backgroundImage:`url(${cover})`,
-            backgroundSize:coverFit, backgroundPosition:'center', backgroundRepeat:'no-repeat',
-            borderBottom:'1px solid rgba(255,255,255,.08)'
-          }}/>
+          <div style={{ height:160, backgroundImage:`url(${cover})`, backgroundSize:coverFit, backgroundPosition:'center', backgroundRepeat:'no-repeat',
+                        borderBottom:'1px solid rgba(255,255,255,.08)'}}/>
         )}
-        <div style={{
-          padding:'20px 24px',
-          background: 'linear-gradient(135deg, rgba(47,111,237,.12), rgba(255,255,255,.03))'
-        }}>
+        <div style={{ padding:'20px 24px', background: 'linear-gradient(135deg, rgba(47,111,237,.12), rgba(255,255,255,.03))' }}>
           <div style={{display:'flex', flexDirection:'column', alignItems:ai}}>
             <div style={{fontSize:24, fontWeight:800, marginBottom:6, color:brand}}>{title}</div>
             <div className="mut">{subtitle}</div>
@@ -263,7 +280,6 @@ function ProfileCard({ appId=APP_ID }){
   );
 }
 
-/* === Games & Leaderboard (новые блоки) === */
 function GamesPicker({ layout='list', games=[] }){
   const list = games.length ? games : ['flappy'];
   return (
@@ -372,6 +388,7 @@ function App(){
   return (
     <div>
       <style dangerouslySetInnerHTML={{__html: baseCss + (skinCss[skin]||skinCss['dark-glass'])}}/>
+      <ThemeCss css={bp?.app?.theme?.css}/>
       <Nav brand={brand} tabs={tabs}/>
       {err && <div style={{padding:16, color:'#ff8080'}}>Ошибка блюпринта: {err}</div>}
       {!bp && !err && <div style={{padding:16, opacity:.8}}>Загрузка…</div>}
@@ -382,8 +399,11 @@ function App(){
 }
 
 function Block({ name, bp, brand }){
-  const props = (bp?.blocks && bp.blocks[name]?.props) || {};
-  switch(name){
+  const def = (bp?.blocks && bp.blocks[name]) || {};
+  const props = def.props || {};
+  const type  = def.type || name;
+
+  switch(type){
     case 'hero':        return <Hero {...props} brand={brand}/>;
     case 'promo':       return <PromoTicker {...props} brand={brand}/>;
     case 'menuGrid':    return <MenuGrid {...props} appId={APP_ID}/>;
@@ -393,7 +413,11 @@ function Block({ name, bp, brand }){
     case 'profile':     return <ProfileCard {...props} appId={APP_ID}/>;
     case 'gamesPicker': return <GamesPicker {...props}/>;
     case 'leaderboard': return <Leaderboard {...props}/>;
+    case 'htmlEmbed':
     default:
+      if (type === 'htmlEmbed' || (name && String(name).startsWith('html__'))){
+        return <div style={{padding:0}}><HtmlEmbed {...props}/></div>;
+      }
       return (
         <div style={{padding:'0 24px 24px'}}>
           <div style={{border:'1px dashed rgba(255,255,255,.25)', borderRadius:12, padding:12, opacity:.8}}>
