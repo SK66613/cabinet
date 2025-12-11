@@ -1,5 +1,8 @@
-/* front_renderer_react_spa_v_1.jsx — Mini‑App Shell + Router + Blocks (12.12.2025) */
-(function(){
+/* front_renderer_react_spa_v_1.jsx — Mini-App Shell + Router + Blocks (12.12.2025)
+   Экспортирует window.App (без import/export).
+   Ожидаемый вызов загрузчиком превью: window.App() — инициализирует рендерер.
+*/
+(function(global){
   const qs = new URLSearchParams(location.search);
   const API_BASE = qs.get('api_base') || '';
   const APP_ID   = qs.get('app_id')   || 'app';
@@ -8,14 +11,16 @@
   const DEMO     = qs.get('demo') === '1';
   const TG       = qs.get('tg');
 
+  /* ---------- tiny helpers ---------- */
   const $ = (sel, el=document) => el.querySelector(sel);
   const $$= (sel, el=document) => Array.from(el.querySelectorAll(sel));
   const el = (tag, c='', html='') => { const n = document.createElement(tag); if(c) n.className=c; if(html) n.innerHTML=html; return n; };
-  const icon = name => ({home:'🏠',cup:'🏆',gamepad:'🎮',gift:'🎁',user:'👤'})[name]||'•';
-  function atobJson(b64){ try{ return JSON.parse(atob(b64)); }catch(_){ return null; } }
+  const ICONS = {home:'🏠',cup:'🏆',gamepad:'🎮',gift:'🎁',user:'👤'};
+  const icon = name => ICONS[name] || '•';
+  const atobJson = (b64)=>{ try{ return JSON.parse(atob(b64)); }catch(_){ return null; } };
 
   function apiGet(path, params={}){
-    const base = (API_BASE || location.origin).replace(/\/+\$/,''); // trim /
+    const base = (API_BASE || location.origin).replace(/\/+$/,''); // trim trailing /
     const u = new URL(base);
     u.searchParams.set('endpoint', path);
     if (TG) u.searchParams.set('tg', TG);
@@ -69,7 +74,7 @@
     const nav = el('nav','btm-nav'); nav.id='btm-nav';
     nav.innerHTML = navRoutes.map(r=>`
       <button class="tab" data-page="${r.id}">
-        <div>${({home:'🏠',cup:'🏆',gamepad:'🎮',gift:'🎁',user:'👤'})[r.icon]||'•'}</div><span>${r.title}</span>
+        <div>${icon(r.icon)}</div><span>${r.title}</span>
       </button>
     `).join('');
     root.appendChild(nav);
@@ -167,7 +172,7 @@
     }
   }
 
-  (async function boot(){
+  async function boot(){
     injectCss(BASE_CSS);
     try{
       const bp = await loadBlueprint();
@@ -183,5 +188,12 @@
       (document.getElementById('app') || document.body).appendChild(box);
       console.error(e);
     }
-  })();
-})();
+  }
+
+  /** Экспортируем в глобал: загрузчик ждёт window.App */
+  function App(){ boot(); }
+  global.App = App;
+
+  // На всякий случай авто-старт, если загрузчик не вызвал вручную
+  if (!global.__NO_AUTOSTART__) { try{ App(); }catch(_){} }
+})(window);
