@@ -1,432 +1,187 @@
-/* front_renderer_react_spa_v_1.jsx — templates + htmlEmbed + theme.css — 11.12.2025 */
-const { useEffect, useMemo, useState } = React;
+/* front_renderer_react_spa_v_1.jsx — Mini‑App Shell + Router + Blocks (12.12.2025) */
+(function(){
+  const qs = new URLSearchParams(location.search);
+  const API_BASE = qs.get('api_base') || '';
+  const APP_ID   = qs.get('app_id')   || 'app';
+  const CHANNEL  = qs.get('preview')  || qs.get('channel') || 'live';
+  const PATH     = qs.get('path')     || '';
+  const DEMO     = qs.get('demo') === '1';
+  const TG       = qs.get('tg');
 
-/* ========= Global params ========= */
-const API_BASE = (window.API_BASE || location.origin);
-const APP_ID   = (window.__APP_ID__  || 'beer');
-const CHANNEL  = (window.__CHANNEL__ || (new URLSearchParams(location.search).get('preview')==='live'?'live':'draft'));
+  const $ = (sel, el=document) => el.querySelector(sel);
+  const $$= (sel, el=document) => Array.from(el.querySelectorAll(sel));
+  const el = (tag, c='', html='') => { const n = document.createElement(tag); if(c) n.className=c; if(html) n.innerHTML=html; return n; };
+  const icon = name => ({home:'🏠',cup:'🏆',gamepad:'🎮',gift:'🎁',user:'👤'})[name]||'•';
+  function atobJson(b64){ try{ return JSON.parse(atob(b64)); }catch(_){ return null; } }
 
-/* ========= Helpers ========= */
-function demoTgId(){
-  let id = localStorage.getItem('demo_tg_id');
-  if (!id){ id = String(Math.floor(Math.random()*1e9)); localStorage.setItem('demo_tg_id', id); }
-  return id;
-}
-async function apiGet(path, params={}){
-  const u = new URL(API_BASE);
-  u.searchParams.set('endpoint', path);
-  u.searchParams.set('tg_id', demoTgId());
-  Object.entries(params).forEach(([k,v]) => v!=null && u.searchParams.set(k, v));
-  const r = await fetch(u.toString());
-  return r.json();
-}
-async function apiPost(path, body={}){
-  const u = new URL(API_BASE);
-  u.searchParams.set('endpoint', path);
-  const r = await fetch(u.toString(), { method:'POST', headers:{ 'content-type':'application/json', 'X-TG-ID': demoTgId() }, body: JSON.stringify(body) });
-  return r.json();
-}
-const cls = (...a)=>a.filter(Boolean).join(' ');
+  function apiGet(path, params={}){
+    const base = (API_BASE || location.origin).replace(/\/+\$/,''); // trim /
+    const u = new URL(base);
+    u.searchParams.set('endpoint', path);
+    if (TG) u.searchParams.set('tg', TG);
+    Object.entries(params).forEach(([k,v])=> v!=null && u.searchParams.set(k,String(v)));
+    return fetch(u.toString()).then(r=>r.json());
+  }
 
-function useHashRoute(){
-  const [hash, setHash] = useState(location.hash || '#/');
-  useEffect(()=>{ const on=()=>setHash(location.hash||'#/'); addEventListener('hashchange', on); return ()=>removeEventListener('hashchange', on); },[]);
-  return hash.replace(/^#/, '') || '/';
-}
+  async function loadBlueprint(){
+    const inline = qs.get('bp');
+    if (inline){ const j = atobJson(inline); if (j) return j; }
+    const res = await apiGet('/api/blueprint', { app_id: APP_ID, channel: CHANNEL, preview: CHANNEL });
+    if (!res?.ok) throw new Error(res?.error || 'NO_BLUEPRINT');
+    return res.data.json || {};
+  }
 
-/* ========= DevPanel ========= */
-function DevPanel(){
-  const [log, setLog] = useState([]);
-  useEffect(()=>{
-    const _fetch = window.fetch;
-    window.fetch = async (...args)=>{
-      const t0 = performance.now();
-      try{
-        const res = await _fetch(...args);
-        const t1 = performance.now();
-        const url = (args[0]||'').toString();
-        const isApi = url.includes('endpoint=');
-        if (isApi){
-          setLog(l => [{t:new Date().toLocaleTimeString(), ms:(t1-t0).toFixed(0), status:res.status, url}, ...l].slice(0,25));
-        }
-        return res;
-      }catch(e){
-        setLog(l => [{t:new Date().toLocaleTimeString(), ms:'ERR', status:'ERR', url:String(args[0])}, ...l].slice(0,25));
-        throw e;
-      }
+  const BASE_CSS = `
+    :root{ --tabH:64px; --navGap:12px; --wrapPadX:14px; --wrapPadTop:14px;
+      --card-bg: rgba(255,255,255,.05); --line: rgba(255,255,255,.10); --mut:#aab3c2; --text:#fff; --radius:16px; }
+    html,body{height:100%}
+    body{margin:0;background:#0b0f16;color:var(--text);font:14px/1.5 Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+    .wrap{ min-height:100svh; padding: var(--wrapPadTop) var(--wrapPadX) calc(var(--tabH) + var(--navGap) + env(safe-area-inset-bottom,0) + 22px); }
+    main>section.page{ display:none } main>section.page.active{ display:block }
+    .card{ background:var(--card-bg); border:1px solid var(--line); border-radius:var(--radius); padding:14px; margin:12px 0; }
+    .h{ font-weight:900; margin:4px 0 10px; }
+    .mut{ color:var(--mut) }
+    .btm-nav{ position:fixed; left:0; right:0; bottom:calc(var(--navGap) + env(safe-area-inset-bottom,0)); z-index:20;
+      height:var(--tabH); display:grid; grid-template-columns:repeat(5,1fr); gap:8px;
+      padding:8px 10px; background:linear-gradient(180deg, rgba(2,6,12,0) 0%, rgba(7,10,16,.9) 32%, rgba(7,10,16,1) 100%);
+      backdrop-filter: blur(10px); border-top:1px solid var(--line); }
+    .tab{ display:grid; place-items:center; gap:6px; border-radius:14px; border:1px solid transparent; color:#fff; font-weight:800; background:transparent; }
+    .tab.active{ background:#fff; color:#000; }
+    .tab span{ font-size:12px }
+    .html-embed > * { max-width:100% }
+    .html-embed section, .html-embed .card, .html-embed .panel{
+      background:var(--card-bg); border:1px solid var(--line); border-radius:var(--radius); padding:14px; margin:12px 0;
+    }
+  `;
+  function injectCss(css){ const s=document.createElement('style'); s.textContent = css; document.head.appendChild(s); }
+
+  function renderShell(bp){
+    const root = document.getElementById('app') || document.body.appendChild(el('div', '', ''));
+    root.innerHTML = '';
+    const wrap = el('div','wrap'); root.appendChild(wrap);
+
+    const navRoutes = (bp.nav?.routes || []).map(r => ({
+      id: (r.path||'/').replace(/^\//,'') || 'home',
+      title: r.title || '',
+      icon: r.icon || 'dot',
+      path: r.path || '/'
+    }));
+    const nav = el('nav','btm-nav'); nav.id='btm-nav';
+    nav.innerHTML = navRoutes.map(r=>`
+      <button class="tab" data-page="${r.id}">
+        <div>${({home:'🏠',cup:'🏆',gamepad:'🎮',gift:'🎁',user:'👤'})[r.icon]||'•'}</div><span>${r.title}</span>
+      </button>
+    `).join('');
+    root.appendChild(nav);
+
+    const main = document.createElement('main'); wrap.appendChild(main);
+    for (const r of (bp.routes||[])){
+      const id = (r.path||'/').replace(/^\//,'') || 'home';
+      const sec = el('section','page'); sec.id = id;
+      main.appendChild(sec);
+    }
+
+    function currentId(){
+      if (PATH){ const p = PATH.replace(/^\//,''); if (document.getElementById(p)) return p; }
+      const q = (new URL(location.href)).searchParams.get('page') || '';
+      if (q && document.getElementById(q)) return q;
+      const h = (location.hash || '#home').replace(/^#/,''); if (document.getElementById(h)) return h;
+      return (navRoutes[0]?.id) || 'home';
+    }
+    function setActive(id){
+      Array.from(document.querySelectorAll('main>section.page')).forEach(s=>{
+        s.classList.toggle('active', s.id===id);
+        s.style.display = (s.id===id)?'block':'none';
+      });
+      Array.from(document.querySelectorAll('#btm-nav .tab')).forEach(t=> t.classList.toggle('active', t.dataset.page===id));
+      requestAnimationFrame(()=> window.scrollTo({top:0, behavior:'auto'}));
+    }
+    function goto(id){ history.replaceState(null,'',`?page=${id}`); setActive(id); }
+    nav.addEventListener('click', e=>{ const b = e.target.closest('.tab'); if (!b) return; goto(b.dataset.page); });
+    setActive(currentId());
+  }
+
+  function renderBuiltInBlock(key, props){
+    const map = {
+      hero(){
+        const box = el('section','card');
+        const t = props.title || 'Hero title';
+        const s = props.subtitle || '';
+        const cover = props.cover || '';
+        const align = props.align || 'left';
+        box.innerHTML = `
+          <div class="h" style="text-align:${align}">${t}</div>
+          ${s?`<div class="mut" style="text-align:${align}">${s}</div>`:''}
+          ${cover?`<div style="margin-top:10px;border-radius:14px;overflow:hidden;border:1px solid var(--line)">
+            <img src="${cover}" alt="" style="width:100%;height:180px;object-fit:${props.coverFit||'cover'}">
+          </div>`:''}
+        `;
+        return box;
+      },
+      promo(){
+        const box = el('section','card');
+        const items = Array.isArray(props.items)?props.items:[];
+        box.innerHTML = `<div class="h">С чего начать</div>` + items.map(it=>`
+          <div class="card" style="margin:8px 0; padding:12px">
+            <div class="h" style="margin:0 0 6px">${it.title||''}</div>
+            <div class="mut">${it.sub||''}</div>
+          </div>
+        `).join('');
+        return box;
+      },
+      menuGrid(){
+        const box = el('section','card');
+        const cat = props.category || 'beer';
+        box.innerHTML = `<div class="h">Меню: ${cat}</div><div class="mut">Демо-меню подтянем из /api/products?category=${cat}</div>`;
+        return box;
+      },
+      stampShelf(){ const box=el('section','card'); box.innerHTML=`<div class="h">Паспорт стилей</div><div class="mut">Штампы пользователя</div>`; return box; },
+      bonusWheel(){ const box=el('section','card'); box.innerHTML=`<div class="h">Колесо бонусов</div><button class="btn">Крутить</button>`; return box; },
+      profile(){ const box=el('section','card'); box.innerHTML=`<div class="h">Профиль</div><div class="mut">@id: ${TG||'demo'}</div>`; return box; },
+      gamesPicker(){
+        const box=el('section','card');
+        const games = props.games||[];
+        box.innerHTML = `<div class="h">Игры</div>` + (games.length? games.map(g=>`
+          <div class="card" style="margin:8px 0;display:flex;justify-content:space-between;align-items:center">
+            <div><div class="h" style="margin:0">${g}</div><div class="mut">Играть и получить приз</div></div>
+            <button class="btn">Играть</button>
+          </div>`).join('') : `<div class="mut">Игр пока нет</div>`);
+        return box;
+      },
+      leaderboard(){ const box=el('section','card'); box.innerHTML=`<div class="h">Турнир</div><div class="mut">Ежедневный и общий</div>`; return box; },
     };
-    return ()=>{ window.fetch = _fetch; };
-  },[]);
-  return (
-    <div style={{position:'fixed', right:10, bottom:10, width:380, maxHeight:260, overflow:'auto',
-                 background:'rgba(0,0,0,.75)', color:'#fff', fontSize:12, padding:8, border:'1px solid rgba(255,255,255,.2)', borderRadius:10, zIndex:9999}}>
-      <div style={{opacity:.8, marginBottom:6}}>DEV • API calls</div>
-      {log.map((x,i)=>(
-        <div key={i} style={{marginBottom:6}}>
-          <b>[{x.status}]</b> {x.ms}ms<br/>
-          <span style={{opacity:.8, wordBreak:'break-all'}}>{x.url}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
+    if (map[key]) return map[key]();
+    const stub = el('section','card'); stub.innerHTML = `<div class="h">${key}</div>`; return stub;
+  }
 
-/* ========= Theming ========= */
-const skinCss = {
-  'dark-glass': `
-    body{background:#0b0f19;color:#eef2f8}
-    .card{border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04); border-radius:16px}
-    .mut{opacity:.8}
-  `,
-  'paper': `
-    body{background:#f6f7fb;color:#10131a}
-    .card{border:1px solid rgba(0,0,0,.06); background:#fff; border-radius:16px}
-    .mut{opacity:.6}
-  `,
-  'dark-solid': `
-    body{background:#0c0f15;color:#e9eef6}
-    .card{border:1px solid rgba(255,255,255,.08); background:#121723; border-radius:16px}
-    .mut{opacity:.75}
-  `
-};
-function ThemeCss({css}){ return css ? <style dangerouslySetInnerHTML={{__html: css}}/> : null; }
-
-/* ========= HTML Embed ========= */
-function sanitizeHtml(html){
-  const allowed = /^(div|section|span|p|h1|h2|h3|h4|h5|h6|ul|ol|li|img|a|button|strong|em|small|br|hr|svg|path|header|footer|main|nav|article|aside|figure|figcaption)$/i;
-  const tmp = document.createElement('div');
-  tmp.innerHTML = html || '';
-
-  (function walk(node){
-    if (node.nodeType === 1){
-      const tag = node.tagName.toLowerCase();
-      if (!allowed.test(tag)){
-        node.replaceWith(...Array.from(node.childNodes));
-        return;
-      }
-      for (const attr of Array.from(node.attributes)){
-        const n = attr.name.toLowerCase();
-        if (n.startsWith('on') || n === 'srcdoc' || (n === 'href' && String(attr.value).trim().toLowerCase().startsWith('javascript:'))){
-          node.removeAttribute(attr.name);
-        }
+  function renderRouteBlocks(pageId, blocks, bp){
+    const host = document.getElementById(pageId);
+    host.innerHTML = '';
+    for (const key of (blocks||[])){
+      const spec = (bp.blocks && bp.blocks[key]) || {};
+      if (spec.type === 'htmlEmbed'){
+        const d = el('div','html-embed card'); d.innerHTML = (spec.props && spec.props.html) || ''; host.appendChild(d);
+      }else{
+        host.appendChild(renderBuiltInBlock(key, spec.props||{}));
       }
     }
-    for (const ch of Array.from(node.childNodes)) walk(ch);
-  })(tmp);
-
-  return tmp.innerHTML;
-}
-function HtmlEmbed({ html }){
-  const [safe, setSafe] = React.useState('');
-  React.useEffect(()=>{ setSafe(sanitizeHtml(html || '')); }, [html]);
-  return <div dangerouslySetInnerHTML={{ __html: safe }}/>;
-}
-
-/* ========= UI Blocks ========= */
-function Hero({ title="Заходи на дегустацию", subtitle="Свежие сорта, бонусы и призы", brand="#2F6FED", cover="", coverFit="cover", align="left" }){
-  const ai = align==='center'?'center':align==='right'?'flex-end':'flex-start';
-  return (
-    <div style={{padding:'24px'}}>
-      <div className="card" style={{padding:'0', overflow:'hidden', position:'relative'}}>
-        {!!cover && (
-          <div style={{ height:160, backgroundImage:`url(${cover})`, backgroundSize:coverFit, backgroundPosition:'center', backgroundRepeat:'no-repeat',
-                        borderBottom:'1px solid rgba(255,255,255,.08)'}}/>
-        )}
-        <div style={{ padding:'20px 24px', background: 'linear-gradient(135deg, rgba(47,111,237,.12), rgba(255,255,255,.03))' }}>
-          <div style={{display:'flex', flexDirection:'column', alignItems:ai}}>
-            <div style={{fontSize:24, fontWeight:800, marginBottom:6, color:brand}}>{title}</div>
-            <div className="mut">{subtitle}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function PromoTicker({ items=[] }){
-  const norm = items.map(x=> typeof x==='string' ? {title:x} : x);
-  return (
-    <div style={{padding:'0 24px 16px'}}>
-      <div style={{display:'flex', gap:8, overflowX:'auto'}}>
-        {norm.map((t,i)=>(
-          <div key={i} style={{whiteSpace:'nowrap', padding:'10px 12px', borderRadius:999, border:'1px solid rgba(255,255,255,.12)', background:'rgba(255,255,255,.06)'}}>
-            <b>{t.title}</b>{t.sub? <span style={{opacity:.75}}> · {t.sub}</span>:null}{t.cta? <span style={{opacity:.75}}> • {t.cta}</span>:null}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function MenuGrid({ category, appId=APP_ID }){
-  const [items, setItems] = useState([]); const [loading, setLoading] = useState(true); const [err,setErr]=useState('');
-  useEffect(()=>{ (async ()=>{
-    try{
-      setLoading(true); setErr('');
-      const res = await apiGet('/api/products', { app_id: appId, category });
-      if (!res?.ok) throw new Error(res?.error || 'products_error');
-      setItems(res?.data?.items || []);
-    }catch(e){ setErr(String(e.message||e)); }
-    finally{ setLoading(false); }
-  })(); }, [category, appId]);
-  return (
-    <div style={{padding:'0 24px 24px'}}>
-      {err && <div style={{color:'#ff8080', marginBottom:8}}>Ошибка меню: {err}</div>}
-      <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(220px,1fr))', gap:12}}>
-        {loading ? Array.from({length:6}).map((_,i)=>(
-          <div key={i} style={{height:120, borderRadius:14}} className="card"/>
-        )) : items.map(p=>(
-          <div key={p.id} className="card" style={{padding:14}}>
-            <div style={{fontWeight:700}}>{p.title}</div>
-            {p.subtitle && <div className="mut" style={{fontSize:13, marginTop:2}}>{p.subtitle}</div>}
-            <div style={{marginTop:10, fontWeight:800}}>{(p.price_cents/100).toFixed(0)} ₽</div>
-            <button style={{marginTop:10}} className="btn">В корзину</button>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function LoyaltyCard({ slots=6 }){
-  return (
-    <div style={{padding:'0 24px 16px'}}>
-      <div className="card" style={{padding:16}}>
-        <div style={{fontWeight:800, marginBottom:10}}>Карта лояльности</div>
-        <div style={{display:'grid', gridTemplateColumns:`repeat(${slots}, 1fr)`, gap:8}}>
-          {Array.from({length:slots}).map((_,i)=>(
-            <div key={i} style={{height:34, borderRadius:10, border:'1px dashed rgba(255,255,255,.25)'}}/>
-          ))}
-        </div>
-        <div className="mut" style={{marginTop:10, fontSize:13}}>Соберите {slots} штампов — получите подарок</div>
-      </div>
-    </div>
-  );
-}
-
-function StampShelf({ appId=APP_ID }){
-  const [pin,setPin]=useState('1111'); const [code,setCode]=useState('IPA'); const [msg,setMsg]=useState(''); const [pending,setPending]=useState(false);
-  async function claim(){
-    setPending(true); setMsg('');
-    try{
-      const res = await apiPost('/api/stamp/claim', { app_id: appId, code, pin });
-      if (!res?.ok) throw new Error(res?.error||'stamp_error');
-      setMsg('Штамп зачтён ✅');
-    }catch(e){ setMsg('Ошибка: '+String(e.message||e)); }
-    finally{ setPending(false); }
   }
-  return (
-    <div style={{padding:'0 24px 16px'}}>
-      <div className="card" style={{padding:16}}>
-        <div style={{display:'flex', gap:8, flexWrap:'wrap'}}>
-          <input value={code} onChange={e=>setCode(e.target.value)} placeholder="код (например, IPA)" className="inp"/>
-          <input value={pin}  onChange={e=>setPin(e.target.value)}  placeholder="PIN кассира" className="inp"/>
-          <button onClick={claim} disabled={pending} className="btn">{pending?'...':'Получить штамп'}</button>
-        </div>
-        {!!msg && <div style={{marginTop:8}}>{msg}</div>}
-      </div>
-    </div>
-  );
-}
 
-function BonusWheel({ appId=APP_ID }){
-  const [res,setRes]=useState(null); const [pending,setPending]=useState(false);
-  async function spin(){
-    setPending(true); setRes(null);
+  (async function boot(){
+    injectCss(BASE_CSS);
     try{
-      const r = await apiPost('/api/wheel/spin', { app_id: appId });
-      if (!r?.ok) throw new Error(r?.error||'wheel_error');
-      setRes(r);
-    }catch(e){ setRes({ ok:false, error:String(e.message||e) }); }
-    finally{ setPending(false); }
-  }
-  return (
-    <div style={{padding:'0 24px 24px'}}>
-      <div className="card" style={{padding:16}}>
-        <div style={{fontWeight:800, marginBottom:8}}>Бонусное колесо</div>
-        <button onClick={spin} disabled={pending} className="btn">{pending?'Крутим...':'Крутить'}</button>
-        {res && <div style={{marginTop:10}}>{res.ok ? <>Выпало: <b>{res.data.label}</b></> : <>Ошибка: {res.error}</>}</div>}
-      </div>
-    </div>
-  );
-}
-
-function ProfileCard({ appId=APP_ID }){
-  const [p,setP]=useState(null); const [err,setErr]=useState('');
-  useEffect(()=>{ (async ()=>{
-    try{
-      setErr(''); setP(null);
-      const r = await apiGet('/api/profile', { app_id: appId });
-      if (!r?.ok) throw new Error(r?.error||'profile_error');
-      setP(r.data||null);
-    }catch(e){ setErr(String(e.message||e)); }
-  })(); }, [appId]);
-  return (
-    <div style={{padding:'0 24px 24px'}}>
-      <div className="card" style={{padding:16}}>
-        <div style={{fontWeight:800, marginBottom:8}}>Профиль</div>
-        {err && <div style={{color:'#ff8080', marginBottom:6}}>Ошибка профиля: {err}</div>}
-        {!p && !err && 'Загрузка...'}
-        {p && (
-          <div style={{display:'grid', gap:6}}>
-            <div>tg_id: <code>{p.tg_id}</code></div>
-            <div>Штампы: <b>{p.stamps_count}</b></div>
-            <div>Последний штамп: {p.last_stamp || '—'}</div>
-            <div>Последний приз: {p.last_prize || '—'}</div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function GamesPicker({ layout='list', games=[] }){
-  const list = games.length ? games : ['flappy'];
-  return (
-    <div style={{padding:'0 24px 16px'}}>
-      <div className="card" style={{padding:16}}>
-        <div style={{fontWeight:800, marginBottom:8}}>Игры</div>
-        <div style={{display: layout==='grid'?'grid':'flex', gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))', gap:10, flexDirection:'column'}}>
-          {list.map((g,i)=>(
-            <div key={i} className="card" style={{padding:12}}>
-              <div style={{fontWeight:700, marginBottom:6}}>{g==='flappy'?'Bumblebee':'Игра '+g}</div>
-              <a href="#/play" className="btn">Играть</a>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Leaderboard({ modes=['daily','all'], game='auto' }){
-  const [mode, setMode] = useState(modes[0]||'daily');
-  const [rows, setRows] = useState([]); const [err,setErr]=useState('');
-  useEffect(()=>{ (async ()=>{
-    try{
-      setErr(''); setRows([]);
-      const r = await apiGet('/api/leaderboard', { app_id: APP_ID, mode, game });
-      if (!r?.ok) throw new Error(r?.error||'lb_error');
-      setRows(r.data?.rows||[]);
-    }catch(e){ setErr(String(e.message||e)); }
-  })(); }, [mode, game]);
-  return (
-    <div style={{padding:'0 24px 16px'}}>
-      <div className="card" style={{padding:16}}>
-        <div style={{display:'flex', alignItems:'center', gap:10, marginBottom:8}}>
-          <div style={{fontWeight:800}}>Турнир</div>
-          <select value={mode} onChange={e=>setMode(e.target.value)} className="inp" style={{width:'auto', height:30}}>
-            {modes.map(m=><option key={m} value={m}>{m==='daily'?'Сегодня':'За всё время'}</option>)}
-          </select>
-        </div>
-        {err && <div style={{color:'#ff8080', marginBottom:6}}>Ошибка: {err}</div>}
-        {!rows.length && !err && <div className="mut">Пока пусто</div>}
-        {!!rows.length && (
-          <div style={{display:'grid', gap:8}}>
-            {rows.map((r,i)=>(
-              <div key={i} style={{display:'grid', gridTemplateColumns:'36px 1fr auto', gap:10, alignItems:'center'}}>
-                <div style={{opacity:.8}}>{i+1}</div>
-                <div style={{overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{r.name || ('user_'+r.tg_id)}</div>
-                <div style={{fontWeight:800}}>{r.score}</div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* ========= Nav + styles ========= */
-function Nav({ brand="#2F6FED", tabs=[] }){
-  const route = useHashRoute();
-  return (
-    <div style={{position:'sticky', top:0, zIndex:10, backdropFilter:'blur(8px)', background:'rgba(11,15,25,.7)', borderBottom:'1px solid rgba(255,255,255,.08)'}}>
-      <div style={{display:'flex', alignItems:'center', gap:12, padding:'12px 16px'}}>
-        <div style={{width:10, height:10, background:brand, borderRadius:99}}/>
-        {(tabs.length?tabs:[{path:'/',title:'Главная'},{path:'/menu',title:'Меню'},{path:'/loyalty',title:'Лояльность'},{path:'/profile',title:'Профиль'}]).map(t=>(
-          <a key={t.path} href={'#'+t.path} className={navLink(route===t.path)}>{t.title}</a>
-        ))}
-        <div style={{marginLeft:'auto', opacity:.6, fontSize:12}}>
-          app_id=<code>{APP_ID}</code> · {CHANNEL}
-        </div>
-      </div>
-    </div>
-  );
-}
-const navLink = (active)=>['nav', active && 'nav--a'].filter(Boolean).join(' ');
-const baseCss = `
-  .nav{color:inherit;text-decoration:none;padding:6px 10px;border-radius:10px;border:1px solid transparent}
-  .nav--a{border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.06)}
-  .btn{padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.2);background:transparent;color:inherit;cursor:pointer}
-  .inp{padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);color:inherit}
-`;
-
-/* ========= Root App ========= */
-function App(){
-  const [bp, setBp] = useState(null);
-  const [err, setErr] = useState('');
-  const route = useHashRoute();
-
-  useEffect(()=>{ (async ()=>{
-    setErr(''); setBp(null);
-    try{
-      const res = await apiGet('/api/blueprint', { app_id: APP_ID, channel: CHANNEL });
-      if (!res?.ok) throw new Error(res?.error || 'blueprint_error');
-      setBp(res.data.json || {});
-    }catch(e){ setErr(String(e.message || e)); console.error('blueprint error:', e); }
-  })(); }, [APP_ID, CHANNEL]);
-
-  const brand = bp?.app?.theme?.brand || '#2F6FED';
-  const skin  = bp?.app?.theme?.skin || 'dark-glass';
-  const tabs  = (bp?.nav?.routes||[]).map(r=>({path:r.path, title:r.title}));
-  const page = useMemo(()=>{
-    const found = (bp?.routes||[]).find(r=> r.path===route) || (bp?.routes||[]).find(r=> r.path==='/');
-    return found || { path:'/', blocks:['hero','promo','menuGrid','loyaltyCard','stampShelf','bonusWheel','profile'] };
-  }, [bp, route]);
-
-  return (
-    <div>
-      <style dangerouslySetInnerHTML={{__html: baseCss + (skinCss[skin]||skinCss['dark-glass'])}}/>
-      <ThemeCss css={bp?.app?.theme?.css}/>
-      <Nav brand={brand} tabs={tabs}/>
-      {err && <div style={{padding:16, color:'#ff8080'}}>Ошибка блюпринта: {err}</div>}
-      {!bp && !err && <div style={{padding:16, opacity:.8}}>Загрузка…</div>}
-      {bp && <div>{page.blocks?.map((b, i) => <Block key={i} name={b} bp={bp} brand={brand}/>)}</div>}
-      {(bp || err) && <DevPanel/>}
-    </div>
-  );
-}
-
-function Block({ name, bp, brand }){
-  const def = (bp?.blocks && bp.blocks[name]) || {};
-  const props = def.props || {};
-  const type  = def.type || name;
-
-  switch(type){
-    case 'hero':        return <Hero {...props} brand={brand}/>;
-    case 'promo':       return <PromoTicker {...props} brand={brand}/>;
-    case 'menuGrid':    return <MenuGrid {...props} appId={APP_ID}/>;
-    case 'loyaltyCard': return <LoyaltyCard {...props}/>;
-    case 'stampShelf':  return <StampShelf {...props} appId={APP_ID}/>;
-    case 'bonusWheel':  return <BonusWheel {...props} appId={APP_ID}/>;
-    case 'profile':     return <ProfileCard {...props} appId={APP_ID}/>;
-    case 'gamesPicker': return <GamesPicker {...props}/>;
-    case 'leaderboard': return <Leaderboard {...props}/>;
-    case 'htmlEmbed':
-    default:
-      if (type === 'htmlEmbed' || (name && String(name).startsWith('html__'))){
-        return <div style={{padding:0}}><HtmlEmbed {...props}/></div>;
+      const bp = await loadBlueprint();
+      if (bp?.app?.theme?.css){ injectCss(String(bp.app.theme.css)); }
+      renderShell(bp);
+      for (const r of (bp.routes||[])){
+        const id = (r.path||'/').replace(/^\//,'') || 'home';
+        renderRouteBlocks(id, r.blocks||[], bp);
       }
-      return (
-        <div style={{padding:'0 24px 24px'}}>
-          <div style={{border:'1px dashed rgba(255,255,255,.25)', borderRadius:12, padding:12, opacity:.8}}>
-            Неизвестный блок: <code>{name}</code>
-          </div>
-        </div>
-      );
-  }
-}
-
-/* ========= Export ========= */
-window.App = App;
+    }catch(e){
+      const box = document.createElement('div'); box.className='card';
+      box.innerHTML = `<div class="h">Ошибка</div><div class="mut">${e.message||e}</div>`;
+      (document.getElementById('app') || document.body).appendChild(box);
+      console.error(e);
+    }
+  })();
+})();
