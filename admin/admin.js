@@ -1,4 +1,4 @@
-/* ====== Конструктор Mini-App · admin.js — v2 autosave + layout + editable API ====== */
+/* ====== Конструктор Mini‑App · admin.v2.js — autosave + editable API + correct POST endpoints (12.12.2025) ====== */
 const $ = sel => document.querySelector(sel);
 const on = (el, ev, fn) => el && el.addEventListener(ev, fn, {passive:true});
 
@@ -16,6 +16,8 @@ const on = (el, ev, fn) => el && el.addEventListener(ev, fn, {passive:true});
 })();
 
 function apiBase(){ return (window.API_BASE || '').replace(/\/+$/,''); }
+
+/* ---------- API helpers ---------- */
 function demoTgId(){
   let id = localStorage.getItem('demo_tg_id');
   if (!id){ id = String(Math.floor(Math.random()*1e9)); localStorage.setItem('demo_tg_id', id); }
@@ -28,6 +30,17 @@ async function api(path, params={}){
   u.searchParams.set('tg_id', demoTgId());
   Object.entries(params).forEach(([k,v]) => v!=null && u.searchParams.set(k, v));
   const r = await fetch(u.toString());
+  return r.json();
+}
+async function apiPost(path, body={}){
+  const base = apiBase() || location.origin;
+  const u = new URL(base);
+  u.searchParams.set('endpoint', path);
+  const r = await fetch(u.toString(), {
+    method:'POST',
+    headers:{ 'content-type':'application/json' },
+    body: JSON.stringify(body)
+  });
   return r.json();
 }
 function debounce(fn, ms=700){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
@@ -209,7 +222,6 @@ function makeBlueprint(){
 
 /* ---------- Preview URL ---------- */
 function makeMiniUrl({ app_id, preview='draft' }){
-  // iframe указывает на твой mini/index.html на текущем домене
   const base = new URL(location.origin + (location.pathname.endsWith('/')? '' : '/'));
   const u = new URL(base.origin + '/mini/index.html');
   const api = apiBase();
@@ -305,14 +317,20 @@ function bindControls(){
 async function saveDraft(){
   const app_id = ($('#app_id').value.trim() || slug($('#brand_name').value||'app'));
   const bp = makeBlueprint();
-  const r = await api('/admin/blueprint_save', { app_id, doc: JSON.stringify(bp) });
-  toast(r.ok? 'Черновик сохранён':'Ошибка сохранения', r.ok);
+  // правильный маршрут + правильный body (см. GAS)
+  const r = await apiPost('/admin/blueprint/save_draft', {
+    app_id,
+    vertical: S.vertical || 'beer',
+    blueprint: bp
+  });
+  toast(r.ok? 'Черновик сохранён':'Ошибка сохранения: '+(r?.error||''), !!r?.ok);
   buildPreviewUrl();
+  return !!r?.ok;
 }
 async function publishLive(){
   const app_id = ($('#app_id').value.trim() || slug($('#brand_name').value||'app'));
-  const r = await api('/admin/publish', { app_id });
-  toast(r.ok? 'Опубликовано в LIVE':'Ошибка публикации', r.ok);
+  const r = await apiPost('/admin/publish', { app_id, to: 'live' });
+  toast(r.ok? ('Опубликовано v'+(r?.data?.version||'')) : ('Ошибка публикации: '+(r?.error||'')), !!r?.ok);
 }
 
 function toast(msg, ok=false){
