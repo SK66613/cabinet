@@ -1,15 +1,12 @@
-/* front_renderer_react_spa_v_1.jsx
-   UMD-режим (без import/export). Подключай в /mini/index.html как:
-   <script type="text/babel" data-presets="react" src="/front_renderer_react_spa_v_1.jsx"></script>
-   Экспортит window.App.
+/* front_renderer_react_spa_v_1.jsx — обновление 11.12.2025
+   UMD + React (babel). Экспортит window.App.
 */
-
 const { useEffect, useMemo, useState } = React;
 
 /* ========= Global params ========= */
-const API_BASE = (window.API_BASE || location.origin);     // прокидывается из ?api_base=...
-const APP_ID   = (window.__APP_ID__  || 'beer');            // прокидывается из ?app_id=...
-const CHANNEL  = (window.__CHANNEL__ || 'live');            // 'draft'|'live'
+const API_BASE = (window.API_BASE || location.origin);
+const APP_ID   = (window.__APP_ID__  || 'beer');
+const CHANNEL  = (window.__CHANNEL__ || (new URLSearchParams(location.search).get('preview')==='live'?'live':'draft'));
 
 /* ========= Helpers ========= */
 function demoTgId(){
@@ -20,22 +17,15 @@ function demoTgId(){
 async function apiGet(path, params={}){
   const u = new URL(API_BASE);
   u.searchParams.set('endpoint', path);
-  // прокинем tg_id как query (без хедеров — это «простой» запрос)
   u.searchParams.set('tg_id', demoTgId());
   Object.entries(params).forEach(([k,v]) => v!=null && u.searchParams.set(k, v));
-
-  const r = await fetch(u.toString());             // ← без headers
+  const r = await fetch(u.toString());
   return r.json();
 }
-
 async function apiPost(path, body={}){
   const u = new URL(API_BASE);
   u.searchParams.set('endpoint', path);
-  const r = await fetch(u.toString(), {
-    method:'POST',
-    headers:{ 'content-type':'application/json', 'X-TG-ID': demoTgId() },
-    body: JSON.stringify(body)
-  });
+  const r = await fetch(u.toString(), { method:'POST', headers:{ 'content-type':'application/json', 'X-TG-ID': demoTgId() }, body: JSON.stringify(body) });
   return r.json();
 }
 const cls = (...a)=>a.filter(Boolean).join(' ');
@@ -83,28 +73,74 @@ function DevPanel(){
   );
 }
 
+/* ========= Theming ========= */
+const skinCss = {
+  'dark-glass': `
+    body{background:#0b0f19;color:#eef2f8}
+    .card{border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04); border-radius:16px}
+    .mut{opacity:.8}
+  `,
+  'paper': `
+    body{background:#f6f7fb;color:#10131a}
+    .card{border:1px solid rgba(0,0,0,.06); background:#fff; border-radius:16px}
+    .mut{opacity:.6}
+  `,
+  'dark-solid': `
+    body{background:#0c0f15;color:#e9eef6}
+    .card{border:1px solid rgba(255,255,255,.08); background:#121723; border-radius:16px}
+    .mut{opacity:.75}
+  `
+};
+
 /* ========= UI Blocks ========= */
-function Hero({ title="Заходи на дегустацию", subtitle="Свежие сорта, бонусы и призы", brand="#2F6FED" }){
+function Hero({
+  title="Заходи на дегустацию",
+  subtitle="Свежие сорта, бонусы и призы",
+  brand="#2F6FED",
+  cover="",           // URL
+  coverFit="cover",   // 'cover'|'contain'
+  align="left"        // 'left'|'center'|'right'
+}){
+  const ai = align==='center'?'center':align==='right'?'flex-end':'flex-start';
   return (
     <div style={{padding:'24px'}}>
-      <div style={{borderRadius:20, padding:'24px', background:'linear-gradient(135deg, rgba(47,111,237,.15), rgba(255,255,255,.04))', border:'1px solid rgba(255,255,255,.08)'}}>
-        <div style={{fontSize:24, fontWeight:700, marginBottom:6}}>{title}</div>
-        <div style={{opacity:.8}}>{subtitle}</div>
+      <div className="card" style={{padding:'0', overflow:'hidden', position:'relative'}}>
+        {!!cover && (
+          <div style={{
+            height:160, backgroundImage:`url(${cover})`,
+            backgroundSize:coverFit, backgroundPosition:'center', backgroundRepeat:'no-repeat',
+            borderBottom:'1px solid rgba(255,255,255,.08)'
+          }}/>
+        )}
+        <div style={{
+          padding:'20px 24px',
+          background: 'linear-gradient(135deg, rgba(47,111,237,.12), rgba(255,255,255,.03))'
+        }}>
+          <div style={{display:'flex', flexDirection:'column', alignItems:ai}}>
+            <div style={{fontSize:24, fontWeight:800, marginBottom:6, color:brand}}>{title}</div>
+            <div className="mut">{subtitle}</div>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
-function PromoTicker({ items=["–20% на IPA сегодня","Каждая 6-я кружка — бесплатно"]}){
+
+function PromoTicker({ items=[] }){
+  const norm = items.map(x=> typeof x==='string' ? {title:x} : x);
   return (
     <div style={{padding:'0 24px 16px'}}>
       <div style={{display:'flex', gap:8, overflowX:'auto'}}>
-        {items.map((t,i)=>(
-          <div key={i} style={{whiteSpace:'nowrap', padding:'8px 12px', borderRadius:999, border:'1px solid rgba(255,255,255,.12)', background:'rgba(255,255,255,.06)'}}>{t}</div>
+        {norm.map((t,i)=>(
+          <div key={i} style={{whiteSpace:'nowrap', padding:'10px 12px', borderRadius:999, border:'1px solid rgba(255,255,255,.12)', background:'rgba(255,255,255,.06)'}}>
+            <b>{t.title}</b>{t.sub? <span style={{opacity:.75}}> · {t.sub}</span>:null}{t.cta? <span style={{opacity:.75}}> • {t.cta}</span>:null}
+          </div>
         ))}
       </div>
     </div>
   );
 }
+
 function MenuGrid({ category, appId=APP_ID }){
   const [items, setItems] = useState([]); const [loading, setLoading] = useState(true); const [err,setErr]=useState('');
   useEffect(()=>{ (async ()=>{
@@ -118,38 +154,39 @@ function MenuGrid({ category, appId=APP_ID }){
   })(); }, [category, appId]);
   return (
     <div style={{padding:'0 24px 24px'}}>
-      {err && <div style={{color:'#f77', marginBottom:8}}>Ошибка меню: {err}</div>}
+      {err && <div style={{color:'#ff8080', marginBottom:8}}>Ошибка меню: {err}</div>}
       <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(220px,1fr))', gap:12}}>
         {loading ? Array.from({length:6}).map((_,i)=>(
-          <div key={i} style={{height:120, borderRadius:14, background:'rgba(255,255,255,.06)', border:'1px solid rgba(255,255,255,.08)'}}/>
+          <div key={i} style={{height:120, borderRadius:14}} className="card"/>
         )) : items.map(p=>(
-          <div key={p.id} style={{borderRadius:14, padding:14, border:'1px solid rgba(255,255,255,.12)', background:'rgba(255,255,255,.04)'}}>
-            <div style={{fontWeight:600}}>{p.title}</div>
-            {p.subtitle && <div style={{opacity:.75, fontSize:13, marginTop:2}}>{p.subtitle}</div>}
-            <div style={{marginTop:10, fontWeight:700}}>{(p.price_cents/100).toFixed(0)} ₽</div>
-            <button style={{marginTop:10, padding:'8px 10px', borderRadius:10, border:'1px solid rgba(255,255,255,.2)', background:'transparent', color:'#fff', cursor:'pointer'}}>В корзину</button>
+          <div key={p.id} className="card" style={{padding:14}}>
+            <div style={{fontWeight:700}}>{p.title}</div>
+            {p.subtitle && <div className="mut" style={{fontSize:13, marginTop:2}}>{p.subtitle}</div>}
+            <div style={{marginTop:10, fontWeight:800}}>{(p.price_cents/100).toFixed(0)} ₽</div>
+            <button style={{marginTop:10}} className="btn">В корзину</button>
           </div>
         ))}
       </div>
     </div>
   );
 }
+
 function LoyaltyCard({ slots=6 }){
-  const filled = 0;
   return (
     <div style={{padding:'0 24px 16px'}}>
-      <div style={{borderRadius:16, padding:16, border:'1px solid rgba(255,255,255,.1)', background:'rgba(255,255,255,.05)'}}>
-        <div style={{fontWeight:700, marginBottom:10}}>Карта лояльности</div>
+      <div className="card" style={{padding:16}}>
+        <div style={{fontWeight:800, marginBottom:10}}>Карта лояльности</div>
         <div style={{display:'grid', gridTemplateColumns:`repeat(${slots}, 1fr)`, gap:8}}>
           {Array.from({length:slots}).map((_,i)=>(
             <div key={i} style={{height:34, borderRadius:10, border:'1px dashed rgba(255,255,255,.25)'}}/>
           ))}
         </div>
-        <div style={{marginTop:10, opacity:.8, fontSize:13}}>Соберите {slots} штампов — получите подарок</div>
+        <div className="mut" style={{marginTop:10, fontSize:13}}>Соберите {slots} штампов — получите подарок</div>
       </div>
     </div>
   );
 }
+
 function StampShelf({ appId=APP_ID }){
   const [pin,setPin]=useState('1111'); const [code,setCode]=useState('IPA'); const [msg,setMsg]=useState(''); const [pending,setPending]=useState(false);
   async function claim(){
@@ -163,15 +200,18 @@ function StampShelf({ appId=APP_ID }){
   }
   return (
     <div style={{padding:'0 24px 16px'}}>
-      <div style={{display:'flex', gap:8, flexWrap:'wrap'}}>
-        <input value={code} onChange={e=>setCode(e.target.value)} placeholder="код (например, IPA)" style={inpStyle}/>
-        <input value={pin}  onChange={e=>setPin(e.target.value)}  placeholder="PIN кассира" style={inpStyle}/>
-        <button onClick={claim} disabled={pending} style={btnStyle}>{pending?'...':'Получить штамп'}</button>
+      <div className="card" style={{padding:16}}>
+        <div style={{display:'flex', gap:8, flexWrap:'wrap'}}>
+          <input value={code} onChange={e=>setCode(e.target.value)} placeholder="код (например, IPA)" className="inp"/>
+          <input value={pin}  onChange={e=>setPin(e.target.value)}  placeholder="PIN кассира" className="inp"/>
+          <button onClick={claim} disabled={pending} className="btn">{pending?'...':'Получить штамп'}</button>
+        </div>
+        {!!msg && <div style={{marginTop:8}}>{msg}</div>}
       </div>
-      {!!msg && <div style={{marginTop:8, opacity:.9}}>{msg}</div>}
     </div>
   );
 }
+
 function BonusWheel({ appId=APP_ID }){
   const [res,setRes]=useState(null); const [pending,setPending]=useState(false);
   async function spin(){
@@ -185,14 +225,15 @@ function BonusWheel({ appId=APP_ID }){
   }
   return (
     <div style={{padding:'0 24px 24px'}}>
-      <div style={{border:'1px solid rgba(255,255,255,.12)', borderRadius:16, padding:16}}>
-        <div style={{fontWeight:700, marginBottom:8}}>Бонусное колесо</div>
-        <button onClick={spin} disabled={pending} style={btnStyle}>{pending?'Крутим...':'Крутить'}</button>
+      <div className="card" style={{padding:16}}>
+        <div style={{fontWeight:800, marginBottom:8}}>Бонусное колесо</div>
+        <button onClick={spin} disabled={pending} className="btn">{pending?'Крутим...':'Крутить'}</button>
         {res && <div style={{marginTop:10}}>{res.ok ? <>Выпало: <b>{res.data.label}</b></> : <>Ошибка: {res.error}</>}</div>}
       </div>
     </div>
   );
 }
+
 function ProfileCard({ appId=APP_ID }){
   const [p,setP]=useState(null); const [err,setErr]=useState('');
   useEffect(()=>{ (async ()=>{
@@ -205,9 +246,9 @@ function ProfileCard({ appId=APP_ID }){
   })(); }, [appId]);
   return (
     <div style={{padding:'0 24px 24px'}}>
-      <div style={{border:'1px solid rgba(255,255,255,.12)', borderRadius:16, padding:16}}>
-        <div style={{fontWeight:700, marginBottom:8}}>Профиль</div>
-        {err && <div style={{color:'#f77', marginBottom:6}}>Ошибка профиля: {err}</div>}
+      <div className="card" style={{padding:16}}>
+        <div style={{fontWeight:800, marginBottom:8}}>Профиль</div>
+        {err && <div style={{color:'#ff8080', marginBottom:6}}>Ошибка профиля: {err}</div>}
         {!p && !err && 'Загрузка...'}
         {p && (
           <div style={{display:'grid', gap:6}}>
@@ -222,17 +263,74 @@ function ProfileCard({ appId=APP_ID }){
   );
 }
 
+/* === Games & Leaderboard (новые блоки) === */
+function GamesPicker({ layout='list', games=[] }){
+  const list = games.length ? games : ['flappy'];
+  return (
+    <div style={{padding:'0 24px 16px'}}>
+      <div className="card" style={{padding:16}}>
+        <div style={{fontWeight:800, marginBottom:8}}>Игры</div>
+        <div style={{display: layout==='grid'?'grid':'flex', gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))', gap:10, flexDirection:'column'}}>
+          {list.map((g,i)=>(
+            <div key={i} className="card" style={{padding:12}}>
+              <div style={{fontWeight:700, marginBottom:6}}>{g==='flappy'?'Bumblebee':'Игра '+g}</div>
+              <a href="#/play" className="btn">Играть</a>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Leaderboard({ modes=['daily','all'], game='auto' }){
+  const [mode, setMode] = useState(modes[0]||'daily');
+  const [rows, setRows] = useState([]); const [err,setErr]=useState('');
+  useEffect(()=>{ (async ()=>{
+    try{
+      setErr(''); setRows([]);
+      const r = await apiGet('/api/leaderboard', { app_id: APP_ID, mode, game });
+      if (!r?.ok) throw new Error(r?.error||'lb_error');
+      setRows(r.data?.rows||[]);
+    }catch(e){ setErr(String(e.message||e)); }
+  })(); }, [mode, game]);
+  return (
+    <div style={{padding:'0 24px 16px'}}>
+      <div className="card" style={{padding:16}}>
+        <div style={{display:'flex', alignItems:'center', gap:10, marginBottom:8}}>
+          <div style={{fontWeight:800}}>Турнир</div>
+          <select value={mode} onChange={e=>setMode(e.target.value)} className="inp" style={{width:'auto', height:30}}>
+            {modes.map(m=><option key={m} value={m}>{m==='daily'?'Сегодня':'За всё время'}</option>)}
+          </select>
+        </div>
+        {err && <div style={{color:'#ff8080', marginBottom:6}}>Ошибка: {err}</div>}
+        {!rows.length && !err && <div className="mut">Пока пусто</div>}
+        {!!rows.length && (
+          <div style={{display:'grid', gap:8}}>
+            {rows.map((r,i)=>(
+              <div key={i} style={{display:'grid', gridTemplateColumns:'36px 1fr auto', gap:10, alignItems:'center'}}>
+                <div style={{opacity:.8}}>{i+1}</div>
+                <div style={{overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{r.name || ('user_'+r.tg_id)}</div>
+                <div style={{fontWeight:800}}>{r.score}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ========= Nav + styles ========= */
-function Nav({ brand="#2F6FED" }){
+function Nav({ brand="#2F6FED", tabs=[] }){
   const route = useHashRoute();
   return (
     <div style={{position:'sticky', top:0, zIndex:10, backdropFilter:'blur(8px)', background:'rgba(11,15,25,.7)', borderBottom:'1px solid rgba(255,255,255,.08)'}}>
       <div style={{display:'flex', alignItems:'center', gap:12, padding:'12px 16px'}}>
         <div style={{width:10, height:10, background:brand, borderRadius:99}}/>
-        <a href="#/"       className={navLink(route==='/')}>Главная</a>
-        <a href="#/menu"   className={navLink(route==='/menu')}>Меню</a>
-        <a href="#/loyalty"className={navLink(route==='/loyalty')}>Лояльность</a>
-        <a href="#/profile"className={navLink(route==='/profile')}>Профиль</a>
+        {(tabs.length?tabs:[{path:'/',title:'Главная'},{path:'/menu',title:'Меню'},{path:'/loyalty',title:'Лояльность'},{path:'/profile',title:'Профиль'}]).map(t=>(
+          <a key={t.path} href={'#'+t.path} className={navLink(route===t.path)}>{t.title}</a>
+        ))}
         <div style={{marginLeft:'auto', opacity:.6, fontSize:12}}>
           app_id=<code>{APP_ID}</code> · {CHANNEL}
         </div>
@@ -241,9 +339,11 @@ function Nav({ brand="#2F6FED" }){
   );
 }
 const navLink = (active)=>['nav', active && 'nav--a'].filter(Boolean).join(' ');
-const navCss = `
-  .nav{color:#fff;text-decoration:none;padding:6px 10px;border-radius:10px;border:1px solid transparent}
+const baseCss = `
+  .nav{color:inherit;text-decoration:none;padding:6px 10px;border-radius:10px;border:1px solid transparent}
   .nav--a{border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.06)}
+  .btn{padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.2);background:transparent;color:inherit;cursor:pointer}
+  .inp{padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);color:inherit}
 `;
 
 /* ========= Root App ========= */
@@ -258,13 +358,12 @@ function App(){
       const res = await apiGet('/api/blueprint', { app_id: APP_ID, channel: CHANNEL });
       if (!res?.ok) throw new Error(res?.error || 'blueprint_error');
       setBp(res.data.json || {});
-    }catch(e){
-      setErr(String(e.message || e));
-      console.error('blueprint error:', e);
-    }
+    }catch(e){ setErr(String(e.message || e)); console.error('blueprint error:', e); }
   })(); }, [APP_ID, CHANNEL]);
 
   const brand = bp?.app?.theme?.brand || '#2F6FED';
+  const skin  = bp?.app?.theme?.skin || 'dark-glass';
+  const tabs  = (bp?.nav?.routes||[]).map(r=>({path:r.path, title:r.title}));
   const page = useMemo(()=>{
     const found = (bp?.routes||[]).find(r=> r.path===route) || (bp?.routes||[]).find(r=> r.path==='/');
     return found || { path:'/', blocks:['hero','promo','menuGrid','loyaltyCard','stampShelf','bonusWheel','profile'] };
@@ -272,18 +371,11 @@ function App(){
 
   return (
     <div>
-      <style dangerouslySetInnerHTML={{__html: navCss}}/>
-      <Nav brand={brand}/>
-      {err && <div style={{padding:16, color:'#f77'}}>Ошибка блюпринта: {err}</div>}
+      <style dangerouslySetInnerHTML={{__html: baseCss + (skinCss[skin]||skinCss['dark-glass'])}}/>
+      <Nav brand={brand} tabs={tabs}/>
+      {err && <div style={{padding:16, color:'#ff8080'}}>Ошибка блюпринта: {err}</div>}
       {!bp && !err && <div style={{padding:16, opacity:.8}}>Загрузка…</div>}
-
-      {bp && (
-        <div>
-          {page.blocks?.map((b, i) => <Block key={i} name={b} bp={bp} brand={brand}/>)}
-        </div>
-      )}
-
-      {/* Dev-панель: включена, когда есть блюпринт или ошибка */}
+      {bp && <div>{page.blocks?.map((b, i) => <Block key={i} name={b} bp={bp} brand={brand}/>)}</div>}
       {(bp || err) && <DevPanel/>}
     </div>
   );
@@ -299,6 +391,8 @@ function Block({ name, bp, brand }){
     case 'stampShelf':  return <StampShelf {...props} appId={APP_ID}/>;
     case 'bonusWheel':  return <BonusWheel {...props} appId={APP_ID}/>;
     case 'profile':     return <ProfileCard {...props} appId={APP_ID}/>;
+    case 'gamesPicker': return <GamesPicker {...props}/>;
+    case 'leaderboard': return <Leaderboard {...props}/>;
     default:
       return (
         <div style={{padding:'0 24px 24px'}}>
@@ -309,10 +403,6 @@ function Block({ name, bp, brand }){
       );
   }
 }
-
-/* ========= Small styles ========= */
-const btnStyle = { padding:'10px 12px', borderRadius:12, border:'1px solid rgba(255,255,255,.2)', background:'transparent', color:'#fff', cursor:'pointer' };
-const inpStyle = { padding:'10px 12px', borderRadius:12, border:'1px solid rgba(255,255,255,.2)', background:'rgba(255,255,255,.06)', color:'#fff' };
 
 /* ========= Export ========= */
 window.App = App;
