@@ -1,11 +1,10 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Mini-App Preview</title>
   <style>
-    /* Базовый фон на время загрузки */
     html,body{height:100%} body{margin:0;background:#0b0f16;color:#fff;font:14px/1.5 Inter,system-ui}
     #app{min-height:100svh;display:grid;place-items:center}
   </style>
@@ -13,11 +12,15 @@
 <body>
   <div id="app">Загружаем превью…</div>
 
-  <!-- ТВОЙ рендерер (тот, что я прислал с window.App внутри) -->
+  <!-- твой фронт-рендерер, который экспортирует window.App -->
   <script src="../front_renderer_react_spa_v_1.jsx"></script>
+
   <script>
-    // Можно вызвать принудительно
-    window.App && window.App();
+    // если нужно, можно передать параметры принудительно:
+    // const api = new URLSearchParams(location.search).get('api_base');
+    // const app = new URLSearchParams(location.search).get('app_id');
+    // window.__FORCE_API_BASE__ = api; window.__FORCE_APP_ID__ = app;
+    if (window.App) window.App();
   </script>
 </body>
 </html>
