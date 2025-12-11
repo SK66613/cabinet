@@ -84,8 +84,39 @@
       <!-- ACCORDION -->
       <div class="acc" id="acc">
 
-        <!-- Шаг 1. Бренд -->
-        <div class="acc__item open" data-acc="brand">
+        <!-- Шаг 0. Готовый шаблон -->
+        <div class="acc__item open" data-acc="tpl">
+          <div class="acc__head"><h3>Шаг 0. Готовый шаблон</h3><span class="acc__chev">›</span></div>
+          <div class="acc__body grid">
+            <div class="cols">
+              <label class="grid">
+                <span class="mut mini">Выбрать шаблон</span>
+                <select id="tpl_builtin" class="select">
+                  <option value="">— пусто —</option>
+                  <option value="demo-main">Demo Main</option>
+                  <option value="salesgenius-main">SalesGenius Main</option>
+                </select>
+              </label>
+              <button class="btn" id="tpl_apply">Применить</button>
+            </div>
+            <div class="notice mini">
+              Блоки создаются «как в макете»: <b>html__…</b> в том же порядке, 1:1 с вёрсткой.
+            </div>
+            <div class="mut mini" id="tpl_summary"></div>
+          </div>
+        </div>
+
+        <!-- Шаг 0.1. Секции шаблона -->
+        <div class="acc__item open" data-acc="tpl-sections">
+          <div class="acc__head"><h3>Шаг 0.1. Секции шаблона</h3><span class="acc__chev">›</span></div>
+          <div class="acc__body grid">
+            <div id="tpl_list" class="grid"></div>
+            <div class="mut mini">Меняй порядок стрелками, скрывай ненужные секции, редактируй HTML.</div>
+          </div>
+        </div>
+
+        <!-- Шаг 1. Бренд и обложка -->
+        <div class="acc__item" data-acc="brand">
           <div class="acc__head"><h3>Шаг 1. Бренд и обложка</h3><span class="acc__chev">›</span></div>
           <div class="acc__body grid">
             <div class="cols">
@@ -121,6 +152,12 @@
                   <option value="cover">cover</option>
                   <option value="contain">contain</option>
                 </select>
+              </label>
+            </div>
+
+            <div class="grid">
+              <label class="grid"><span class="mut mini">Доп. CSS темы (опционально)</span>
+                <textarea id="theme_css" placeholder=":root { --brand-color:#2F6FED } body{ font-family:Inter }"></textarea>
               </label>
             </div>
           </div>
@@ -189,7 +226,7 @@
           </div>
         </div>
 
-        <!-- Шаг 6. Публикация -->
+        <!-- Шаг 6. Черновик / Публикация -->
         <div class="acc__item" data-acc="publish">
           <div class="acc__head"><h3>Шаг 6. Черновик / Публикация</h3><span class="acc__chev">›</span></div>
           <div class="acc__body grid">
@@ -244,6 +281,7 @@
 <script>
   window.API_BASE = window.API_BASE || "https://constructor-miniapp.cyberian13.workers.dev";
 </script>
+<script src="./templates.js"></script>
 <script src="./admin.js"></script>
 </body>
 </html>
