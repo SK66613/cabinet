@@ -7,13 +7,13 @@
   <style>
     :root{
       --bg:#0c0f15; --panel:#121723; --mut:#aab3c2; --text:#e9eef6; --line:rgba(255,255,255,.08);
-      --brand:#2F6FED; --radius:14px;
+      --radius:14px;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
-    .app{display:grid;grid-template-columns:420px 1fr;gap:14px;min-height:100svh;padding:14px}
-    @media (max-width:1080px){ .app{grid-template-columns:1fr; padding:10px} }
+    .app{display:grid;grid-template-columns:460px 1fr;gap:14px;min-height:100svh;padding:14px;align-items:start}
+    @media (max-width:1180px){ .app{grid-template-columns:1fr; padding:10px} }
 
     .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px}
     .bar{display:flex;align-items:center;gap:10px}
@@ -27,6 +27,7 @@
     .input,.select,textarea{width:100%;height:38px;border-radius:10px;border:1px solid var(--line);background:#0f1420;color:#fff;padding:0 10px}
     textarea{height:auto;min-height:80px;padding:10px}
     .cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media (max-width:520px){ .cols{grid-template-columns:1fr} }
     .chip{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:#131b29;font-weight:700}
     .grid{display:grid;gap:10px}
     .mut-hr{height:1px;background:var(--line);margin:10px 0}
@@ -42,27 +43,36 @@
     .acc__item.open .acc__chev{transform:rotate(90deg)}
 
     /* Превью */
-    .preview{display:grid;gap:8px}
-    .toolbar{display:flex;justify-content:space-between;gap:10px}
+    .preview{display:grid;gap:8px; align-content:start}
+    .toolbar{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
     .right-head{display:grid;gap:8px}
-    iframe{width:360px;max-width:100%;height:720px;border:1px solid var(--line);border-radius:16px;background:#000}
+    iframe{width:360px;max-width:100%;height:78vh;min-height:640px;border:1px solid var(--line);border-radius:16px;background:#000}
     .w100 iframe{width:100%}
     .notice{padding:10px;border:1px dashed var(--line);border-radius:10px;background:#0e1422;color:#cbd6e7}
 
     .tabs{display:flex;gap:6px;flex-wrap:wrap}
     .tab{height:30px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:#131b29;color:#fff;font-weight:800;cursor:pointer}
     .tab[aria-pressed="true"]{background:#fff;color:#000;border-color:#fff}
+
+    /* Template list layout */
+    .tpl-card{padding:8px}
+    .tpl-row{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center}
+    .tpl-controls{display:flex;gap:6px;align-items:center}
+    .tpl-name{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   </style>
 </head>
 <body>
 <div class="app">
   <!-- LEFT: Controls -->
   <section class="card">
-    <header class="bar" style="justify-content:space-between;margin-bottom:6px">
-      <div class="bar">
+    <header class="bar" style="justify-content:space-between;margin-bottom:6px;gap:16px">
+      <div class="bar" style="gap:8px">
         <div class="badge">Конструктор Mini-App</div>
+        <span class="mut mini" id="api_hint"></span>
       </div>
-      <div class="mut mini" id="api_hint"></div>
+      <div class="cols" style="grid-template-columns:1fr;gap:6px;min-width:260px">
+        <input id="api_base_input" class="input" placeholder="API_BASE, например: https://constructor-miniapp.cyberian13.workers.dev">
+      </div>
     </header>
 
     <div class="grid">
@@ -102,7 +112,7 @@
             <div class="notice mini">
               Блоки создаются «как в макете»: <b>html__…</b> в том же порядке, 1:1 с вёрсткой.
             </div>
-            <div class="mut mini" id="tpl_summary"></div>
+            <pre class="mut mini" id="tpl_summary" style="white-space:pre-wrap"></pre>
           </div>
         </div>
 
@@ -111,7 +121,7 @@
           <div class="acc__head"><h3>Шаг 0.1. Секции шаблона</h3><span class="acc__chev">›</span></div>
           <div class="acc__body grid">
             <div id="tpl_list" class="grid"></div>
-            <div class="mut mini">Меняй порядок стрелками, скрывай ненужные секции, редактируй HTML.</div>
+            <div class="mut mini">Меняй порядок стрелками, скрывай ненужные секции, редактируй HTML — автосейв включён.</div>
           </div>
         </div>
 
@@ -154,12 +164,9 @@
                 </select>
               </label>
             </div>
-
-            <div class="grid">
-              <label class="grid"><span class="mut mini">Доп. CSS темы (опционально)</span>
-                <textarea id="theme_css" placeholder=":root { --brand-color:#2F6FED } body{ font-family:Inter }"></textarea>
-              </label>
-            </div>
+            <label class="grid"><span class="mut mini">Доп. CSS темы (опционально)</span>
+              <textarea id="theme_css" placeholder=":root { --brand-color:#2F6FED } body{ font-family:Inter }"></textarea>
+            </label>
           </div>
         </div>
 
@@ -175,10 +182,7 @@
               <label class="grid"><span class="mut mini">Описание</span><input id="menu_sub" class="input" placeholder="хмелевая"></label>
               <label class="grid"><span class="mut mini">Цена, ₽</span><input id="menu_price" class="input" placeholder="390" inputmode="numeric"></label>
             </div>
-            <div>
-              <button class="btn" id="add_pos">Добавить позицию</button>
-              <span class="mut mini" id="pos_count">0 позиций</span>
-            </div>
+            <div class="bar"><button class="btn" id="add_pos">Добавить позицию</button><span class="mut mini" id="pos_count">0 позиций</span></div>
           </div>
         </div>
 
@@ -204,7 +208,7 @@
               <button class="tab" data-block="bonusWheel" aria-pressed="true">Колесо</button>
               <button class="tab" data-block="profile" aria-pressed="true">Профиль</button>
             </div>
-            <div class="mut mini">Кликаешь по чипам — включаешь/выключаешь блоки. Игровые блоки появляются автоматически, если выбрана игра.</div>
+            <div class="mut mini">Игровые блоки появляются автоматически, если выбрана игра.</div>
           </div>
         </div>
 
@@ -213,8 +217,7 @@
           <div class="acc__head"><h3>Шаг 5. Игры</h3><span class="acc__chev">›</span></div>
           <div class="acc__body grid">
             <div class="cols">
-              <label class="grid">
-                <span class="mut mini">Игра</span>
+              <label class="grid"><span class="mut mini">Игра</span>
                 <select id="game_code" class="select">
                   <option value="">— без игры —</option>
                   <option value="flappy">Bumblebee (embedded)</option>
@@ -230,7 +233,7 @@
         <div class="acc__item" data-acc="publish">
           <div class="acc__head"><h3>Шаг 6. Черновик / Публикация</h3><span class="acc__chev">›</span></div>
           <div class="acc__body grid">
-            <div class="bar">
+            <div class="bar" style="flex-wrap:wrap;gap:8px">
               <button class="btn" id="save_draft">Создать черновик</button>
               <button class="btn" id="preview_btn">Превью черновика</button>
               <button class="btn btn-primary" id="publish_btn">Опубликовать</button>
@@ -247,7 +250,7 @@
   <section class="right-head">
     <div class="card preview">
       <div class="toolbar">
-        <div class="bar">
+        <div class="bar" style="gap:8px;flex-wrap:wrap">
           <label class="chip"><span class="mut mini">Устройство</span>
             <select id="pv_device" class="select" style="width:auto">
               <option value="360">Телефон (360px)</option>
@@ -258,8 +261,6 @@
           </label>
           <label class="chip"><input type="checkbox" id="pv_tgchrome" checked> <span class="mut mini">TG-шапка</span></label>
           <label class="chip"><input type="checkbox" id="pv_demo" checked> <span class="mut mini">Демо-данные</span></label>
-        </div>
-        <div class="bar">
           <label class="chip"><span class="mut mini">Вкладка</span>
             <select id="pv_tab" class="select" style="width:auto">
               <option value="/">Главная</option>
@@ -278,9 +279,7 @@
   </section>
 </div>
 
-<script>
-  window.API_BASE = window.API_BASE || "https://constructor-miniapp.cyberian13.workers.dev";
-</script>
+<script> window.API_BASE = window.API_BASE || localStorage.getItem('ADMIN_API_BASE') || "https://constructor-miniapp.cyberian13.workers.dev"; </script>
 <script src="./templates.js"></script>
 <script src="./admin.js"></script>
 </body>
