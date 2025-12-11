@@ -7,8 +7,7 @@
   <style>
     :root{
       --bg:#0c0f15; --panel:#121723; --mut:#aab3c2; --text:#e9eef6; --line:rgba(255,255,255,.08);
-      --brand:#2F6FED; --ok:#37d67a; --bad:#ff6b6b;
-      --radius:14px;
+      --brand:#2F6FED; --radius:14px;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
@@ -19,14 +18,18 @@
     .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px}
     .bar{display:flex;align-items:center;gap:10px}
     .mut{color:var(--mut)} .mini{font-size:12px}
+    .h{margin:0 0 8px;font-weight:900}
     .btn{height:38px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:#1a2131;color:#fff;font-weight:800;cursor:pointer}
     .btn:active{transform:translateY(1px)}
     .btn-primary{background:linear-gradient(180deg,#77a7ff,#2F6FED);border:0;color:#0b0f18}
+    .btn-ghost{background:transparent}
     .badge{display:inline-grid;place-items:center;height:26px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:#1a2131;font-weight:800}
     .input,.select,textarea{width:100%;height:38px;border-radius:10px;border:1px solid var(--line);background:#0f1420;color:#fff;padding:0 10px}
+    textarea{height:auto;min-height:80px;padding:10px}
     .cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     .chip{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:#131b29;font-weight:700}
     .grid{display:grid;gap:10px}
+    .mut-hr{height:1px;background:var(--line);margin:10px 0}
 
     /* Аккордеон */
     .acc{display:grid;gap:10px}
@@ -40,7 +43,7 @@
 
     /* Превью */
     .preview{display:grid;gap:8px}
-    .toolbar{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .toolbar{display:flex;justify-content:space-between;gap:10px}
     .right-head{display:grid;gap:8px}
     iframe{width:360px;max-width:100%;height:720px;border:1px solid var(--line);border-radius:16px;background:#000}
     .w100 iframe{width:100%}
@@ -81,9 +84,9 @@
       <!-- ACCORDION -->
       <div class="acc" id="acc">
 
-        <!-- Шаг 1 -->
+        <!-- Шаг 1. Бренд -->
         <div class="acc__item open" data-acc="brand">
-          <div class="acc__head"><h3>Шаг 1. Бренд</h3><span class="acc__chev">›</span></div>
+          <div class="acc__head"><h3>Шаг 1. Бренд и обложка</h3><span class="acc__chev">›</span></div>
           <div class="acc__body grid">
             <div class="cols">
               <label class="grid"><span class="mut mini">Название</span><input id="brand_name" class="input" placeholder="Beer Club"></label>
@@ -91,53 +94,39 @@
             </div>
             <div class="cols">
               <label class="grid"><span class="mut mini">Короткое описание</span><input id="brand_sub" class="input" placeholder="Свежие сорта, бонусы и призы"></label>
-              <div></div>
+              <label class="grid">
+                <span class="mut mini">Скин темы</span>
+                <select id="brand_skin" class="select">
+                  <option value="dark-glass">Dark Glass</option>
+                  <option value="paper">Paper</option>
+                  <option value="dark-solid">Dark Solid</option>
+                </select>
+              </label>
             </div>
-
-            <!-- Новое: баннер/логотип/CTA/слоган -->
+            <div class="mut-hr"></div>
             <div class="cols">
-              <label class="grid">
-                <span class="mut mini">Hero-баннер (URL)</span>
-                <input id="brand_hero" class="input" placeholder="/img/packs/beer/hero_wheat.jpg">
-              </label>
-              <label class="grid">
-                <span class="mut mini">Логотип (URL, опц.)</span>
-                <input id="brand_logo" class="input" placeholder="/img/packs/beer/logo_beer.png">
-              </label>
+              <label class="grid"><span class="mut mini">Hero заголовок</span><input id="hero_title" class="input" placeholder="Заходи на дегустацию"></label>
+              <label class="grid"><span class="mut mini">Hero обложка (URL)</span><input id="hero_cover" class="input" placeholder="https://.../cover.jpg"></label>
             </div>
             <div class="cols">
-              <label class="grid">
-                <span class="mut mini">CTA на баннере</span>
-                <input id="brand_cta" class="input" value="О нас">
+              <label class="grid"><span class="mut mini">Выравнивание текста</span>
+                <select id="hero_align" class="select">
+                  <option value="left">Слева</option>
+                  <option value="center">По центру</option>
+                  <option value="right">Справа</option>
+                </select>
               </label>
-              <label class="grid">
-                <span class="mut mini">Слоган (headline)</span>
-                <input id="brand_headline" class="input" value="KEY WEST’S Craft Beer DESTINATION">
+              <label class="grid"><span class="mut mini">Режим обложки</span>
+                <select id="hero_fit" class="select">
+                  <option value="cover">cover</option>
+                  <option value="contain">contain</option>
+                </select>
               </label>
-            </div>
-
-            <!-- Загрузка своей картинки -->
-            <div class="cols">
-              <label class="grid">
-                <span class="mut mini">Загрузить картинку (jpg/png/webp)</span>
-                <input id="hero_file" type="file" accept="image/*" class="input">
-              </label>
-              <div class="grid">
-                <span class="mut mini">&nbsp;</span>
-                <div class="bar">
-                  <button class="btn" id="hero_use_local">Использовать для превью</button>
-                  <button class="btn btn-primary" id="hero_upload_cdn">Загрузить в CDN</button>
-                </div>
-              </div>
-            </div>
-            <div class="bar" id="hero_thumb_wrap" style="gap:10px;flex-wrap:wrap">
-              <img id="hero_thumb" alt="" style="display:none;max-height:90px;border-radius:10px;border:1px solid var(--line)">
-              <span id="hero_status" class="mut mini"></span>
             </div>
           </div>
         </div>
 
-        <!-- Шаг 2 -->
+        <!-- Шаг 2. Меню -->
         <div class="acc__item" data-acc="menu">
           <div class="acc__head"><h3>Шаг 2. Меню (быстрый старт)</h3><span class="acc__chev">›</span></div>
           <div class="acc__body grid">
@@ -156,7 +145,7 @@
           </div>
         </div>
 
-        <!-- Шаг 3 -->
+        <!-- Шаг 3. Лояльность -->
         <div class="acc__item" data-acc="loyalty">
           <div class="acc__head"><h3>Шаг 3. Лояльность</h3><span class="acc__chev">›</span></div>
           <div class="acc__body cols">
@@ -165,7 +154,7 @@
           </div>
         </div>
 
-        <!-- Шаг 4 -->
+        <!-- Шаг 4. Блоки -->
         <div class="acc__item" data-acc="blocks">
           <div class="acc__head"><h3>Шаг 4. Блоки</h3><span class="acc__chev">›</span></div>
           <div class="acc__body grid">
@@ -178,11 +167,11 @@
               <button class="tab" data-block="bonusWheel" aria-pressed="true">Колесо</button>
               <button class="tab" data-block="profile" aria-pressed="true">Профиль</button>
             </div>
-            <div class="mut mini">Кликаешь по чипам — включаешь/выключаешь блоки. Порядок: Hero → Promo → MenuGrid → Loyalty → Passport → Wheel → Profile.</div>
+            <div class="mut mini">Кликаешь по чипам — включаешь/выключаешь блоки. Игровые блоки появляются автоматически, если выбрана игра.</div>
           </div>
         </div>
 
-        <!-- Шаг 5 -->
+        <!-- Шаг 5. Игры -->
         <div class="acc__item" data-acc="game">
           <div class="acc__head"><h3>Шаг 5. Игры</h3><span class="acc__chev">›</span></div>
           <div class="acc__body grid">
@@ -196,10 +185,11 @@
               </label>
               <label class="grid"><span class="mut mini">Попыток/день</span><input id="game_attempts" class="input" value="20" inputmode="numeric"></label>
             </div>
+            <div class="mut mini">При выборе игры в «Главной» автоматически появятся блоки <b>Игры</b> и <b>Турнир</b>.</div>
           </div>
         </div>
 
-        <!-- Шаг 6 -->
+        <!-- Шаг 6. Публикация -->
         <div class="acc__item" data-acc="publish">
           <div class="acc__head"><h3>Шаг 6. Черновик / Публикация</h3><span class="acc__chev">›</span></div>
           <div class="acc__body grid">
@@ -208,7 +198,7 @@
               <button class="btn" id="preview_btn">Превью черновика</button>
               <button class="btn btn-primary" id="publish_btn">Опубликовать</button>
             </div>
-            <div class="notice mini">Превью справа — как «настоящая» мини-аппа: нижние табы, баннер, игры, колесо. В демо-режиме всё заполняется заглушками.</div>
+            <div class="notice mini">Блюпринт сохраняется в GAS через ваш Worker. Превью справа рендерит блюпринт «как есть».</div>
           </div>
         </div>
 
