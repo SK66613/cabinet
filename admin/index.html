@@ -19,19 +19,14 @@
     .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px}
     .bar{display:flex;align-items:center;gap:10px}
     .mut{color:var(--mut)} .mini{font-size:12px}
-    .h{margin:0 0 8px;font-weight:900}
     .btn{height:38px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:#1a2131;color:#fff;font-weight:800;cursor:pointer}
     .btn:active{transform:translateY(1px)}
     .btn-primary{background:linear-gradient(180deg,#77a7ff,#2F6FED);border:0;color:#0b0f18}
-    .btn-ghost{background:transparent}
     .badge{display:inline-grid;place-items:center;height:26px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:#1a2131;font-weight:800}
     .input,.select,textarea{width:100%;height:38px;border-radius:10px;border:1px solid var(--line);background:#0f1420;color:#fff;padding:0 10px}
-    textarea{height:auto;min-height:80px;padding:10px}
     .cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     .chip{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:#131b29;font-weight:700}
     .grid{display:grid;gap:10px}
-    .g2{grid-template-columns:1fr 1fr}
-    .mut-hr{height:1px;background:var(--line);margin:10px 0}
 
     /* Аккордеон */
     .acc{display:grid;gap:10px}
@@ -45,7 +40,7 @@
 
     /* Превью */
     .preview{display:grid;gap:8px}
-    .toolbar{display:flex;justify-content:space-between;gap:10px}
+    .toolbar{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
     .right-head{display:grid;gap:8px}
     iframe{width:360px;max-width:100%;height:720px;border:1px solid var(--line);border-radius:16px;background:#000}
     .w100 iframe{width:100%}
@@ -97,6 +92,47 @@
             <div class="cols">
               <label class="grid"><span class="mut mini">Короткое описание</span><input id="brand_sub" class="input" placeholder="Свежие сорта, бонусы и призы"></label>
               <div></div>
+            </div>
+
+            <!-- Новое: баннер/логотип/CTA/слоган -->
+            <div class="cols">
+              <label class="grid">
+                <span class="mut mini">Hero-баннер (URL)</span>
+                <input id="brand_hero" class="input" placeholder="/img/packs/beer/hero_wheat.jpg">
+              </label>
+              <label class="grid">
+                <span class="mut mini">Логотип (URL, опц.)</span>
+                <input id="brand_logo" class="input" placeholder="/img/packs/beer/logo_beer.png">
+              </label>
+            </div>
+            <div class="cols">
+              <label class="grid">
+                <span class="mut mini">CTA на баннере</span>
+                <input id="brand_cta" class="input" value="О нас">
+              </label>
+              <label class="grid">
+                <span class="mut mini">Слоган (headline)</span>
+                <input id="brand_headline" class="input" value="KEY WEST’S Craft Beer DESTINATION">
+              </label>
+            </div>
+
+            <!-- Загрузка своей картинки -->
+            <div class="cols">
+              <label class="grid">
+                <span class="mut mini">Загрузить картинку (jpg/png/webp)</span>
+                <input id="hero_file" type="file" accept="image/*" class="input">
+              </label>
+              <div class="grid">
+                <span class="mut mini">&nbsp;</span>
+                <div class="bar">
+                  <button class="btn" id="hero_use_local">Использовать для превью</button>
+                  <button class="btn btn-primary" id="hero_upload_cdn">Загрузить в CDN</button>
+                </div>
+              </div>
+            </div>
+            <div class="bar" id="hero_thumb_wrap" style="gap:10px;flex-wrap:wrap">
+              <img id="hero_thumb" alt="" style="display:none;max-height:90px;border-radius:10px;border:1px solid var(--line)">
+              <span id="hero_status" class="mut mini"></span>
             </div>
           </div>
         </div>
@@ -156,7 +192,6 @@
                 <select id="game_code" class="select">
                   <option value="">— без игры —</option>
                   <option value="flappy">Bumblebee (embedded)</option>
-                  <!-- задел под другие -->
                 </select>
               </label>
               <label class="grid"><span class="mut mini">Попыток/день</span><input id="game_attempts" class="input" value="20" inputmode="numeric"></label>
@@ -173,7 +208,7 @@
               <button class="btn" id="preview_btn">Превью черновика</button>
               <button class="btn btn-primary" id="publish_btn">Опубликовать</button>
             </div>
-            <div class="notice mini">Данные сохраняются в GAS через ваш Worker. Превью берёт блюпринт «как есть» и рендерит справа.</div>
+            <div class="notice mini">Превью справа — как «настоящая» мини-аппа: нижние табы, баннер, игры, колесо. В демо-режиме всё заполняется заглушками.</div>
           </div>
         </div>
 
