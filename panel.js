@@ -136,6 +136,87 @@ const META = {
     }, 650);
   });
 
+
+
+  // ============ BOT INTEGRATION ============
+
+const API_BASE = (window.CTOR_API_BASE || window.location.origin).replace(/\/$/, '');
+const botUsernameEl = document.getElementById('tgBotUsername');
+const botTokenEl    = document.getElementById('tgBotToken');
+const botStatusPill = document.getElementById('botStatusPill');
+const botSaveBtn    = document.getElementById('saveBotToken');
+const botSaveHint   = document.getElementById('botSaveHint');
+
+function getCurrentAppId(){
+  const qs = new URLSearchParams(window.location.search);
+  return qs.get('app_id') || qs.get('app') || 'my_app';
+}
+
+// загрузка статуса
+async function loadBotSettings(){
+  const appId = getCurrentAppId();
+  if (botSaveHint) botSaveHint.textContent = 'Загрузка...';
+  try {
+    const res = await fetch(`${API_BASE}/api/app/${appId}/bot`, { method: 'GET' });
+    const data = await res.json();
+    if (data.hasBot){
+      botStatusPill.textContent = 'Подключён';
+      botStatusPill.classList.add('pill--ok');
+      botSaveHint.textContent = 'Интеграция настроена.';
+    } else {
+      botStatusPill.textContent = 'Не подключён';
+      botSaveHint.textContent = 'Укажи токен бота и нажми сохранить.';
+    }
+  } catch(e){
+    botSaveHint.textContent = 'Ошибка загрузки.';
+  }
+}
+
+// сохранение токена
+async function saveBotSettings(){
+  const appId = getCurrentAppId();
+  const token = botTokenEl.value.trim();
+  const username = botUsernameEl.value.trim();
+
+  if (!token){
+    botSaveHint.textContent = 'Введи токен перед сохранением.';
+    return;
+  }
+
+  botSaveBtn.disabled = true;
+  botSaveHint.textContent = 'Сохраняем...';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/app/${appId}/bot`, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ bot_username: username, token })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error('Ошибка сохранения');
+    botTokenEl.value = '';
+    botStatusPill.textContent = 'Подключён';
+    botSaveHint.textContent = 'Токен сохранён ✓';
+  } catch(e){
+    botSaveHint.textContent = 'Ошибка, попробуй позже.';
+  } finally {
+    botSaveBtn.disabled = false;
+  }
+}
+
+// навешиваем обработчик
+if (botSaveBtn){
+  botSaveBtn.addEventListener('click', saveBotSettings);
+}
+
+// при открытии вкладки интеграции загружаем статус
+document.addEventListener('click', (e)=>{
+  const btn = e.target.closest('[data-tab="integrations"]');
+  if (btn) loadBotSettings();
+});
+
+
+  
   // open like screenshot
   showView('settings');
   sideNav.querySelectorAll('.side__item').forEach(x=>x.classList.toggle('is-active', x.dataset.view==='settings'));
