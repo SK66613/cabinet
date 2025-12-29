@@ -8,6 +8,40 @@ console.log("[studio] build step21");
   const ctxMenu = $('#ctxMenu');
   const navList = $('#nav_list');
 
+    // ====== Cloudflare Worker API base ======
+  // Если конструктор лежит на том же домене, что и воркер — хватит location.origin.
+  // Если нет — можно сверху в index.html задать window.CTOR_API_BASE = 'https://build-apps.cyberian13.workers.dev';
+  const CTOR_API_BASE = (window.CTOR_API_BASE || window.location.origin).replace(/\/$/, '');
+
+  // Берём app_id из query (?app_id=123) и кладём в поле App ID
+  (function initAppIdFromQuery(){
+    try{
+      const qs = new URLSearchParams(window.location.search);
+      const qAppId = qs.get('app_id') || qs.get('app');
+      if (qAppId && appIdEl) appIdEl.value = qAppId;
+    }catch(_){}
+  })();
+
+  function getAppId(){
+    return (appIdEl && appIdEl.value.trim()) || '1';
+  }
+
+  // Подтянуть конфиг мини-аппа с воркера (если он уже есть)
+  async function fetchAppConfigFromServer(){
+    const appId = getAppId();
+    try{
+      const r = await fetch(CTOR_API_BASE + '/api/app/' + encodeURIComponent(appId), { method:'GET' });
+      if (!r.ok) return null;
+      const data = await r.json().catch(()=>null);
+      if (!data || typeof data !== 'object') return null;
+      return data.config || null;
+    }catch(e){
+      console.warn('[studio] fetchAppConfigFromServer failed', e);
+      return null;
+    }
+  }
+
+
   // Load manifest-based blocks (if present)
   try{ await (window.BlockLibrary && window.BlockLibrary.ensureLoaded && window.BlockLibrary.ensureLoaded()); }catch(_){ }
 
@@ -276,15 +310,29 @@ console.log("[studio] build step21");
 let MODAL_CTX = null; // {path, filter}
   let BE_CTX = null; // {path, inst}
 
-  // v1.7 base blueprint
+  // v1.7 base blueprint — базовый шаблон (на случай, если на сервере пока пусто)
   let BP = JSON.parse(JSON.stringify(window.Templates['Demo Main'].blueprint));
   let CURRENT_PATH = '/';
+
+  // Пытаемся поверх демо-шаблона подгрузить конфиг с сервера (если этот appId уже существует)
+  try{
+    const remoteCfg = await fetchAppConfigFromServer();
+    if (remoteCfg && typeof remoteCfg === 'object') {
+      BP = JSON.parse(JSON.stringify(remoteCfg));
+      console.log('[studio] loaded BP from worker for appId=', getAppId());
+    } else {
+      console.log('[studio] no remote BP, using demo blueprint');
+    }
+  }catch(e){
+    console.warn('[studio] apply remote BP failed', e);
+  }
 
   // Reorder via drag in preview is disabled (modal overlaps preview, so it's inconvenient).
   const ENABLE_REORDER = false;
 
   BP.app = BP.app || {};
   BP.app.themeTokens = BP.app.themeTokens || { ...DEFAULT_THEME_TOKENS };
+
   BP.app.theme = BP.app.theme || { css: '' };
 
   function syncThemeCSS(){
@@ -365,20 +413,83 @@ let MODAL_CTX = null; // {path, filter}
     if(mod && y){ e.preventDefault(); redo(); }
   });
 
-  /* ---------- persistence ---------- */
+  /* ---------- persistence (Cloudflare Worker) ---------- */
   function saveDraft(){
-    const appId = appIdEl.value.trim()||'my_app';
-    localStorage.setItem(`bp:${appId}:draft`, JSON.stringify({ version: Date.now(), json: BP }));
+    const appId = getAppId();
+
+    // 1) Локальный бэкап для спокойствия
+    try{
+      const d = JSON.stringify(BP || {}, null, 0);
+      localStorage.setItem(`bp:${appId}:draft`, d);
+    }catch(e){
+      console.warn('[studio] local saveDraft failed', e);
+    }
+
+    // 2) Отправляем черновик на воркер
+    (async()=>{
+      try{
+        const clean = sanitizeBP(BP);
+        const res = await fetch(CTOR_API_BASE + '/api/app/' + encodeURIComponent(appId), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            config: clean,
+            // если захочешь, можно хранить название внутри BP.app.title
+            title: (BP && BP.app && BP.app.title) || undefined
+          })
+        });
+        if (!res.ok){
+          console.warn('[studio] remote saveDraft failed', res.status);
+          toast('Сервер не принял черновик (' + res.status + '), но локально сохранено');
+        } else {
+          toast('Черновик сохранён');
+        }
+      }catch(e){
+        console.warn('[studio] remote saveDraft error', e);
+        toast('Не удалось отправить черновик на сервер');
+      }
+    })();
   }
-  function publishLive(){
-    const appId = appIdEl.value.trim()||'my_app';
+
+  async function publishLive(){
+    const appId = getAppId();
     const d = localStorage.getItem(`bp:${appId}:draft`);
-    if(!d){ alert('Сначала сохраните черновик'); return; }
-    localStorage.setItem(`bp:${appId}:live`, d);
-    alert('Опубликовано локально');
+    if (!d){
+      alert('Сначала сохраните черновик');
+      return;
+    }
+
+    // 1) Локально помечаем как live
+    try{
+      localStorage.setItem(`bp:${appId}:live`, d);
+    }catch(e){
+      console.warn('[studio] local publishLive failed', e);
+    }
+
+    // 2) Сообщаем воркеру, что надо "опубликовать" (создать/обновить publicId и ссылку)
+    try{
+      const res = await fetch(CTOR_API_BASE + '/api/app/' + encodeURIComponent(appId) + '/publish', {
+        method: 'POST'
+      });
+      if (res.ok){
+        const data = await res.json().catch(()=>null);
+        let msg = 'Опубликовано.';
+        if (data && data.publicUrl){
+          msg = 'Опубликовано.\n\nWebApp URL:\n' + data.publicUrl;
+        }
+        alert(msg);
+      } else {
+        alert('Опубликовано локально.\nСервер вернул статус ' + res.status);
+      }
+    }catch(e){
+      console.warn('[studio] publishLive remote error', e);
+      alert('Опубликовано локально.\nНе удалось отправить данные на сервер.');
+    }
   }
+
   $('#save').onclick = ()=>{ saveDraft(); };
   $('#publish').onclick = publishLive;
+
 
   /* ---------- live preview ---------- */
   
@@ -3830,7 +3941,7 @@ if (inst.key === 'cta') {
   Формат:
     PUT:  POST JSON { appId, mode:'draft'|'live', bp }
     GET:  GET  ?appId=...&mode=...
-====================================================================== */
+
 
 function getRemotePutUrl_(){ return (localStorage.getItem('studio:remote_put_url')||'').trim(); }
 function getRemoteGetUrl_(){ return (localStorage.getItem('studio:remote_get_url')||'').trim(); }
@@ -3891,3 +4002,4 @@ async function publishLive(){
     alert('Опубликовано локально. На сервер не ушло — проверь studio:remote_put_url и эндпоинт.');
   }
 }
+  ====================================================================== */
