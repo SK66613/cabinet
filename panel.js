@@ -250,6 +250,111 @@ const META = {
     }
   });
 
+  function initBotIntegrationPanel() {
+  const usernameInput = document.getElementById('bot_username');
+  const tokenInput    = document.getElementById('bot_token');
+  const statusEl      = document.getElementById('bot-integration-status');
+  const btnSave       = document.getElementById('bot-integration-save');
+  const btnDelete     = document.getElementById('bot-integration-delete');
+
+  if (!usernameInput || !tokenInput || !statusEl || !btnSave || !btnDelete) {
+    console.warn('[bot] интеграционная панель не найдена в DOM');
+    return;
+  }
+
+  // начальное состояние с сервера (/api/app/:id/bot)
+  loadBotIntegrationStatus(statusEl, usernameInput);
+
+  btnSave.addEventListener('click', async () => {
+    const username = usernameInput.value.trim();
+    const token    = tokenInput.value.trim();
+
+    if (!token) {
+      alert('Введи токен бота');
+      return;
+    }
+
+    btnSave.disabled   = true;
+    btnDelete.disabled = true;
+    const prevText = btnSave.textContent;
+    btnSave.textContent = 'Сохраняем…';
+
+    try {
+      const res = await fetch(`${API_BASE}/api/app/${encodeURIComponent(CURRENT_APP_ID)}/bot`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // ВАЖНО: те же meta, что мы видели в логах
+        body: JSON.stringify({
+          bot_username: username,
+          bot_token: token,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || !data.ok) {
+        console.error('[bot] save error', res.status, data);
+        alert('Ошибка при сохранении. Проверь токен и попробуй ещё раз.');
+        return;
+      }
+
+      statusEl.textContent = 'Подключён: ' + (data.username || username || 'без username');
+      statusEl.style.color = '#22c55e';
+
+      // токен можно сразу очищать из поля, чтобы не торчал
+      tokenInput.value = '';
+    } catch (e) {
+      console.error('[bot] save exception', e);
+      alert('Ошибка сети при сохранении интеграции.');
+    } finally {
+      btnSave.disabled   = false;
+      btnDelete.disabled = false;
+      btnSave.textContent = prevText;
+    }
+  });
+
+  btnDelete.addEventListener('click', async () => {
+    if (!confirm('Удалить интеграцию с ботом для этого мини-аппа?')) {
+      return;
+    }
+
+    btnSave.disabled   = true;
+    btnDelete.disabled = true;
+    const prevText = btnDelete.textContent;
+    btnDelete.textContent = 'Удаляем…';
+
+    try {
+      const res = await fetch(`${API_BASE}/api/app/${encodeURIComponent(CURRENT_APP_ID)}/bot`, {
+        method: 'DELETE',
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || !data.ok) {
+        console.error('[bot] delete error', res.status, data);
+        alert('Не получилось удалить интеграцию. Попробуй ещё раз.');
+        return;
+      }
+
+      // чистим поля и статус
+      usernameInput.value = '';
+      tokenInput.value    = '';
+      statusEl.textContent = 'Не подключён';
+      statusEl.style.color = '';
+    } catch (e) {
+      console.error('[bot] delete exception', e);
+      alert('Ошибка сети при удалении интеграции.');
+    } finally {
+      btnSave.disabled   = false;
+      btnDelete.disabled = false;
+      btnDelete.textContent = prevText;
+    }
+  });
+}
+
+
 
   // sync theme into constructor iframe
   try{
