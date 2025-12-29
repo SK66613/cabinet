@@ -55,6 +55,35 @@
           <button class="tab" data-tab="integrations">Интеграции</button>
         </div>
 
+        <!-- Вкладка: интеграции (бот) -->
+<div class="settings-tab" id="tab_integrations" hidden>
+  <div class="card">
+    <div class="card__hdr">
+      <div>
+        <div class="card__title">Интеграции</div>
+        <div class="card__sub">Подключи Telegram-бота для начисления бонусов и кэшбэка</div>
+      </div>
+      <div class="pill" id="botStatusPill">Не подключён</div>
+    </div>
+
+    <div class="form">
+      <label class="field">
+        <span class="field__label">Имя бота</span>
+        <input id="tgBotUsername" class="input" placeholder="@my_shop_bot"/>
+      </label>
+
+      <label class="field">
+        <span class="field__label">Токен бота</span>
+        <input id="tgBotToken" class="input" type="password" placeholder="123456:ABCDEF..."/>
+      </label>
+
+      <button type="button" class="btn btn--primary" id="saveBotToken">Сохранить интеграцию</button>
+      <div class="mut" id="botSaveHint"></div>
+    </div>
+  </div>
+</div>
+
+
         <div class="views">
           <section class="view" data-view="constructor">
             <div class="ctorWrap">
