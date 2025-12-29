@@ -55,35 +55,6 @@
           <button class="tab" data-tab="integrations">Интеграции</button>
         </div>
 
-        <!-- Вкладка: интеграции (бот) -->
-<div class="settings-tab" id="tab_integrations" hidden>
-  <div class="card">
-    <div class="card__hdr">
-      <div>
-        <div class="card__title">Интеграции</div>
-        <div class="card__sub">Подключи Telegram-бота для начисления бонусов и кэшбэка</div>
-      </div>
-      <div class="pill" id="botStatusPill">Не подключён</div>
-    </div>
-
-    <div class="form">
-      <label class="field">
-        <span class="field__label">Имя бота</span>
-        <input id="tgBotUsername" class="input" placeholder="@my_shop_bot"/>
-      </label>
-
-      <label class="field">
-        <span class="field__label">Токен бота</span>
-        <input id="tgBotToken" class="input" type="password" placeholder="123456:ABCDEF..."/>
-      </label>
-
-      <button type="button" class="btn btn--primary" id="saveBotToken">Сохранить интеграцию</button>
-      <div class="mut" id="botSaveHint"></div>
-    </div>
-  </div>
-</div>
-
-
         <div class="views">
           <section class="view" data-view="constructor">
             <div class="ctorWrap">
@@ -232,25 +203,52 @@
                 </div>
               </div>
 
-              <div class="card" id="tab_fallbacks" hidden>
-                <div class="card__hdr">
-                  <div>
-                    <div class="card__title">Форс‑мажоры</div>
-                    <div class="card__sub">Шаблоны ответов, аварийные режимы.</div>
-                  </div>
-                </div>
-                <div class="empty">Добавим позже.</div>
-              </div>
-
               <div class="card" id="tab_integrations" hidden>
-                <div class="card__hdr">
+                <div class="card__hdr card__hdr--split">
                   <div>
                     <div class="card__title">Интеграции</div>
-                    <div class="card__sub">CRM/касса/Sheets/внешние API.</div>
+                    <div class="card__sub">
+                      Подключи Telegram-бота для начисления бонусов и кэшбэка.
+                    </div>
                   </div>
+                  <span class="pill" id="botStatusBadge">Не подключён</span>
                 </div>
-                <div class="empty">Добавим позже.</div>
+
+                <div class="form">
+                  <label class="field">
+                    <span>Имя бота <span class="mut">(опционально)</span></span>
+                    <input class="input" id="botUsername" placeholder="@my_loyalty_bot">
+                  </label>
+
+                  <label class="field">
+                    <span>Токен бота</span>
+                    <input
+                      class="input"
+                      id="botToken"
+                      type="password"
+                      autocomplete="off"
+                      placeholder="123456:ABC-DEF..."
+                    >
+                    <div class="mut">
+                      Токен хранится зашифрованным в нашем хранилище и не показывается повторно.
+                    </div>
+                  </label>
+
+                  <div class="actions">
+                    <!-- Кнопка на всю ширину -->
+                    <button
+                      class="btn btn--primary"
+                      id="saveBotIntegration"
+                      style="width:100%;"
+                    >
+                      Сохранить интеграцию
+                    </button>
+                  </div>
+
+                  <div class="mut" id="botSaveHint"></div>
+                </div>
               </div>
+
             </div>
           </section>
 
