@@ -371,19 +371,62 @@ html[data-theme="light"] .themeSwitch{
 
 
 
-.pill {
-  padding:4px 10px;
-  border-radius:999px;
-  font-size:11px;
-  border:1px solid rgba(255,255,255,.2);
-  color:#aaa;
+.settings-bot-form{
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 520px;
 }
-.pill--ok {
-  border-color:rgba(34,197,94,.4);
-  color:#4ade80;
+
+.settings-bot-form .row{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
-.mut {
-  font-size:12px;
-  color:#9ca3af;
-  margin-top:6px;
+
+.settings-bot-form label{
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted-strong);
+}
+
+.settings-bot-form input{
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(148,163,184,.6);
+  padding: 0 12px;
+  font-size: 13px;
+  color: var(--text-main);
+  background: rgba(15,23,42,.7);
+}
+
+.settings-bot-form-small{
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.settings-bot-form .actions{
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.settings-bot-form .actions .btn{
+  width: auto;            /* не на всю ширину */
+  padding: 0 24px;
+}
+
+.settings-bot-status{
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.settings-bot-status--ok{
+  color: #16a34a;
+}
+
+.settings-bot-status--err{
+  color: #b91c1c;
 }
