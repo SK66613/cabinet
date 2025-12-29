@@ -203,67 +203,54 @@
                 </div>
               </div>
 
-              <section class="card">
-  <header class="card-header">
-    <h2 class="card-title">Интеграция с ботом</h2>
-    <p class="card-subtitle">
-      Привяжи Telegram-бота к этому мини-аппу.
-    </p>
-  </header>
+              <div class="card" id="tab_integrations" hidden>
+                <div class="card__hdr card__hdr--split">
+                  <div>
+                    <div class="card__title">Интеграции</div>
+                    <div class="card__sub">
+                      Подключи Telegram-бота для начисления бонусов и кэшбэка.
+                    </div>
+                  </div>
+                  <span class="pill" id="botStatusBadge">Не подключён</span>
+                </div>
 
-  <div class="card-body">
-    <div class="form-row">
-      <label class="form-label" for="bot_username">Юзернейм бота</label>
-      <input
-        type="text"
-        id="bot_username"
-        class="input"
-        placeholder="@my_miniapp_bot"
-      />
-      <p class="form-hint">
-        Как в Телеграме, без лишних пробелов.
-      </p>
-    </div>
+                <div class="form">
+                  <label class="field">
+                    <span>Имя бота <span class="mut">(опционально)</span></span>
+                    <input class="input" id="botUsername" placeholder="@my_loyalty_bot">
+                  </label>
 
-    <div class="form-row">
-      <label class="form-label" for="bot_token">Токен бота</label>
-      <input
-        type="password"
-        id="bot_token"
-        class="input"
-        placeholder="1234567890:AA..."
-      />
-      <p class="form-hint">
-        Скопируй токен из BotFather. Мы безопасно шифруем и храним его.
-      </p>
-    </div>
+                  <label class="field">
+                    <span>Токен бота</span>
+                    <input
+                      class="input"
+                      id="botToken"
+                      type="password"
+                      autocomplete="off"
+                      placeholder="123456:ABC-DEF..."
+                    >
+                    <div class="mut">
+                      Токен хранится зашифрованным в нашем хранилище и не показывается повторно.
+                    </div>
+                  </label>
 
-    <div class="form-row">
-      <label class="form-label">Статус интеграции</label>
-      <div id="bot-integration-status" class="form-hint">
-        Не подключён
-      </div>
-    </div>
+                  <div class="actions">
+                    <!-- Кнопка на всю ширину -->
+                    <button
+                      class="btn btn--primary"
+                      id="saveBotIntegration"
+                      style="width:100%;"
+                    >
+                      Сохранить интеграцию
+                    </button>
+                  </div>
 
-    <div class="form-row" style="margin-top:16px; display:flex; justify-content:flex-end; gap:8px;">
-      <button
-        type="button"
-        class="btn btn--ghost btn--danger"
-        id="bot-integration-delete"
-      >
-        Удалить интеграцию
-      </button>
-      <button
-        type="button"
-        class="btn btn--primary"
-        id="bot-integration-save"
-      >
-        Сохранить
-      </button>
-    </div>
-  </div>
-</section>
+                  <div class="mut" id="botSaveHint"></div>
+                </div>
+              </div>
 
+            </div>
+          </section>
 
           <section class="view" data-view="support">
             <div class="card">
