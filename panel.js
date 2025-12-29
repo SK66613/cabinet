@@ -136,90 +136,120 @@ const META = {
     }, 650);
   });
 
-
-
-  // ============ BOT INTEGRATION ============
-
-const API_BASE = (window.CTOR_API_BASE || window.location.origin).replace(/\/$/, '');
-const botUsernameEl = document.getElementById('tgBotUsername');
-const botTokenEl    = document.getElementById('tgBotToken');
-const botStatusPill = document.getElementById('botStatusPill');
-const botSaveBtn    = document.getElementById('saveBotToken');
-const botSaveHint   = document.getElementById('botSaveHint');
-
-function getCurrentAppId(){
-  const qs = new URLSearchParams(window.location.search);
-  return qs.get('app_id') || qs.get('app') || 'my_app';
-}
-
-// загрузка статуса
-async function loadBotSettings(){
-  const appId = getCurrentAppId();
-  if (botSaveHint) botSaveHint.textContent = 'Загрузка...';
-  try {
-    const res = await fetch(`${API_BASE}/api/app/${appId}/bot`, { method: 'GET' });
-    const data = await res.json();
-    if (data.hasBot){
-      botStatusPill.textContent = 'Подключён';
-      botStatusPill.classList.add('pill--ok');
-      botSaveHint.textContent = 'Интеграция настроена.';
-    } else {
-      botStatusPill.textContent = 'Не подключён';
-      botSaveHint.textContent = 'Укажи токен бота и нажми сохранить.';
-    }
-  } catch(e){
-    botSaveHint.textContent = 'Ошибка загрузки.';
-  }
-}
-
-// сохранение токена
-async function saveBotSettings(){
-  const appId = getCurrentAppId();
-  const token = botTokenEl.value.trim();
-  const username = botUsernameEl.value.trim();
-
-  if (!token){
-    botSaveHint.textContent = 'Введи токен перед сохранением.';
-    return;
-  }
-
-  botSaveBtn.disabled = true;
-  botSaveHint.textContent = 'Сохраняем...';
-
-  try {
-    const res = await fetch(`${API_BASE}/api/app/${appId}/bot`, {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify({ bot_username: username, token })
-    });
-    const data = await res.json();
-    if (!data.ok) throw new Error('Ошибка сохранения');
-    botTokenEl.value = '';
-    botStatusPill.textContent = 'Подключён';
-    botSaveHint.textContent = 'Токен сохранён ✓';
-  } catch(e){
-    botSaveHint.textContent = 'Ошибка, попробуй позже.';
-  } finally {
-    botSaveBtn.disabled = false;
-  }
-}
-
-// навешиваем обработчик
-if (botSaveBtn){
-  botSaveBtn.addEventListener('click', saveBotSettings);
-}
-
-// при открытии вкладки интеграции загружаем статус
-document.addEventListener('click', (e)=>{
-  const btn = e.target.closest('[data-tab="integrations"]');
-  if (btn) loadBotSettings();
-});
-
-
-  
   // open like screenshot
   showView('settings');
   sideNav.querySelectorAll('.side__item').forEach(x=>x.classList.toggle('is-active', x.dataset.view==='settings'));
+
+    // ====== Bot integration (Telegram) ======
+  const botUsernameInput = document.getElementById('botUsername');
+  const botTokenInput = document.getElementById('botToken');
+  const botStatusBadge = document.getElementById('botStatusBadge');
+  const botSaveBtn = document.getElementById('saveBotIntegration');
+  const botSaveHint = document.getElementById('botSaveHint');
+
+  // API base для конструктора / мини-аппов (Cloudflare Worker)
+  // Можно переопределить window.CTOR_API_BASE сверху в HTML,
+  // иначе по умолчанию берём твой воркер.
+  const CAB_API_BASE = (window.CTOR_API_BASE || 'https://build-apps.cyberian13.workers.dev').replace(/\/$/, '');
+  const currentUrl = new URL(window.location.href);
+  const CAB_APP_ID =
+    currentUrl.searchParams.get('app_id') ||
+    currentUrl.searchParams.get('app')   ||
+    'my_app';
+
+  // Подтягиваем текущие настройки бота
+  async function loadBotIntegration(){
+    if (!botSaveBtn || !CAB_APP_ID) return;
+    if (botSaveHint) botSaveHint.textContent = 'Загружаем интеграцию…';
+    botSaveBtn.disabled = true;
+
+    try{
+      const r = await fetch(
+        CAB_API_BASE + '/api/app/' + encodeURIComponent(CAB_APP_ID) + '/bot',
+        { method:'GET' }
+      );
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const data = await r.json().catch(()=>null);
+
+      if (data && data.ok){
+        if (botUsernameInput && data.bot_username){
+          botUsernameInput.value = data.bot_username;
+        }
+        if (botStatusBadge){
+          const linked = !!data.linked;
+          botStatusBadge.textContent = linked ? 'Подключён' : 'Не подключён';
+          botStatusBadge.classList.toggle('pill--ok', linked);
+        }
+      }
+
+      if (botSaveHint) botSaveHint.textContent = '';
+    }catch(e){
+      console.warn('[panel] loadBotIntegration failed', e);
+      if (botSaveHint) botSaveHint.textContent = 'Не удалось загрузить интеграцию';
+    }finally{
+      botSaveBtn.disabled = false;
+    }
+  }
+
+  // Сохранение токена/имени бота
+  async function saveBotIntegration(){
+    if (!botSaveBtn || !CAB_APP_ID) return;
+    const username = botUsernameInput ? botUsernameInput.value.trim() : '';
+    const token    = botTokenInput    ? botTokenInput.value.trim()    : '';
+
+    botSaveBtn.disabled = true;
+    if (botSaveHint) botSaveHint.textContent = 'Сохраняем…';
+
+    try{
+      const r = await fetch(
+        CAB_API_BASE + '/api/app/' + encodeURIComponent(CAB_APP_ID) + '/bot',
+        {
+          method:'PUT',
+          headers:{ 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            bot_username: username || null,
+            bot_token:    token    || null   // пустая строка = не меняем токен
+          })
+        }
+      );
+      const data = await r.json().catch(()=>null);
+      if (!r.ok || !data || data.ok === false){
+        throw new Error((data && data.error) || ('HTTP ' + r.status));
+      }
+
+      // Токен после сохранения чистим из поля (не подсвечиваем пользователю)
+      if (botTokenInput) botTokenInput.value = '';
+
+      if (botStatusBadge){
+        botStatusBadge.textContent = 'Подключён';
+        botStatusBadge.classList.add('pill--ok');
+      }
+      if (botSaveHint) botSaveHint.textContent = 'Интеграция сохранена ✓';
+      setTimeout(()=>{ if (botSaveHint) botSaveHint.textContent = ''; }, 1800);
+    }catch(e){
+      console.error('[panel] saveBotIntegration failed', e);
+      if (botSaveHint) botSaveHint.textContent =
+        'Ошибка при сохранении. Проверь токен и попробуй ещё раз.';
+    }finally{
+      botSaveBtn.disabled = false;
+    }
+  }
+
+  // Клик по кнопке «Сохранить интеграцию»
+  botSaveBtn?.addEventListener('click', (e)=>{
+    e.preventDefault();
+    saveBotIntegration();
+  });
+
+  // Подгружаем интеграцию, когда пользователь заходит на вкладку «Интеграции»
+  settingsTabs?.addEventListener('click',(e)=>{
+    const t = e.target.closest('[data-tab]');
+    if (!t) return;
+    if (t.dataset.tab === 'integrations') {
+      loadBotIntegration();
+    }
+  });
+
 
   // sync theme into constructor iframe
   try{
@@ -231,5 +261,4 @@ document.addEventListener('click', (e)=>{
     }
   }catch(_){}
 })();
-
 
