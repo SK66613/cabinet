@@ -4,17 +4,16 @@
 <head>
 
 
-    <meta charset="utf-8" />
-  <title>Miniapp Studio</title>
-  <!-- твои стили, шрифты и т.п. -->
+  <!-- ... твои мета, стили и т.п. ... -->
 
-  <!-- ⬇⬇⬇ ВАЖНО: ДО studio.js -->
+  <!-- Настройки API для конструктора -->
   <script>
-    // Явно говорим студии, куда слать запросы
+    // говорим студии, куда слать запросы
     window.CTOR_API_BASE = 'https://build-apps.cyberian13.workers.dev';
   </script>
 
-  <script src="./studio.js"></script>
+  <!-- И только потом подключаем studio.js -->
+  <script src="app/studio.js"></script>
 
 
 
