@@ -2,35 +2,45 @@
 console.log("[studio] build step21");
 
 (async function(){
-  const $=(q,r=document)=>r.querySelector(q);
-  const toast=(msg)=>{ try{ console.log('[toast]',msg); }catch(_){} };
+  const $     = (q,r=document)=>r.querySelector(q);
+  const toast = (msg)=>{ try{ console.log('[toast]',msg); }catch(_){} };
   const appIdEl = $('#app_id');
   const ctxMenu = $('#ctxMenu');
   const navList = $('#nav_list');
 
-    // ====== Cloudflare Worker API base ======
-  // Если конструктор лежит на том же домене, что и воркер — хватит location.origin.
-  // Если нет — можно сверху в index.html задать window.CTOR_API_BASE = 'https://build-apps.cyberian13.workers.dev';
+  // ====== Cloudflare Worker API base ======
+  // По умолчанию берём origin страницы (кабинет).
+  // Можно переопределить сверху в HTML:
+  //   <script>window.CTOR_API_BASE = 'https://build-apps.cyberian13.workers.dev';</script>
   const CTOR_API_BASE = (window.CTOR_API_BASE || window.location.origin).replace(/\/$/, '');
+  // Прокидываем обратно в window, чтобы другие скрипты могли использовать
+  window.CTOR_API_BASE = CTOR_API_BASE;
 
   // Берём app_id из query (?app_id=123) и кладём в поле App ID
   (function initAppIdFromQuery(){
     try{
-      const qs = new URLSearchParams(window.location.search);
+      const qs    = new URLSearchParams(window.location.search);
       const qAppId = qs.get('app_id') || qs.get('app');
-      if (qAppId && appIdEl) appIdEl.value = qAppId;
+      if (qAppId && appIdEl){
+        appIdEl.value = qAppId;
+      }
     }catch(_){}
   })();
 
+  // Текущий appId (что написано в поле). Если пусто – используем '1'.
   function getAppId(){
     return (appIdEl && appIdEl.value.trim()) || '1';
   }
 
-  // Подтянуть конфиг мини-аппа с воркера (если он уже есть)
+  // Подтянуть конфиг мини-аппа с воркера (если он уже есть).
+  // Возвращает data.config или null.
   async function fetchAppConfigFromServer(){
     const appId = getAppId();
     try{
-      const r = await fetch(CTOR_API_BASE + '/api/app/' + encodeURIComponent(appId), { method:'GET' });
+      const r = await fetch(
+        CTOR_API_BASE + '/api/app/' + encodeURIComponent(appId),
+        { method:'GET' }
+      );
       if (!r.ok) return null;
       const data = await r.json().catch(()=>null);
       if (!data || typeof data !== 'object') return null;
@@ -41,23 +51,34 @@ console.log("[studio] build step21");
     }
   }
 
+  // Хэлперы наружу (можно дергать из консоли или других модулей)
+  window.StudioGetAppId            = getAppId;
+  window.StudioFetchServerConfig   = fetchAppConfigFromServer;
 
   // Load manifest-based blocks (if present)
-  try{ await (window.BlockLibrary && window.BlockLibrary.ensureLoaded && window.BlockLibrary.ensureLoaded()); }catch(_){ }
+  try{
+    await (window.BlockLibrary &&
+           window.BlockLibrary.ensureLoaded &&
+           window.BlockLibrary.ensureLoaded());
+  }catch(_){ }
 
   if (navList){
     navList.addEventListener('click', (e)=>{
       const header = e.target.closest('.acc-h');
       if (!header) return;
+      // клики по кнопкам внутри заголовка не переключают гармошку
       if (e.target.closest('[data-act]')) return;
-      const acc = header.closest('.acc');
+
+      const acc  = header.closest('.acc');
       if (!acc) return;
       const path = acc.getAttribute('data-path');
       if (!path) return;
+
       const already = acc.classList.contains('open');
       navList.querySelectorAll('.acc').forEach(x=>x.classList.remove('open'));
       if (!already){
         acc.classList.add('open');
+        // синхронизируем превью с выбранной секцией
         CURRENT_PATH = path;
         navigatePreview(path);
         updatePreviewInline();
@@ -66,20 +87,23 @@ console.log("[studio] build step21");
   }
 
   const themeAccWrap = $('#themeAcc');
-
   if (themeAccWrap){
     const h = themeAccWrap.querySelector('.acc-h');
-    if (h){ h.addEventListener('click', ()=> themeAccWrap.classList.toggle('open')); }
+    if (h){
+      h.addEventListener('click', ()=> themeAccWrap.classList.toggle('open'));
+    }
   }
 
-  const frame = $('#frame');
-  const phone = $('#phone');
-  const dock = $('#dock');
-  const zoomEl = $('#zoom'); const zoomVal = $('#zoom_val');
-  const tabTypeSel = $('#tab_type');
-  const tabAddBtn = $('#tab_add');
+  const frame       = $('#frame');
+  const phone       = $('#phone');
+  const dock        = $('#dock');
+  const zoomEl      = $('#zoom');
+  const zoomVal     = $('#zoom_val');
+  const tabTypeSel  = $('#tab_type');
+  const tabAddBtn   = $('#tab_add');
   const routeAddBtn = $('#route_add');
-  const routeNewEl = $('#route_new');
+  const routeNewEl  = $('#route_new');
+
 
   
 
