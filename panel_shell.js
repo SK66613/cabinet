@@ -43,18 +43,22 @@
   }
 
   async function api(path, opts){
-    const res = await fetch(API_BASE + path, Object.assign({
-      credentials:'include',
-      headers:{'Content-Type':'application/json'}
-    }, opts||{}));
-    let data=null;
-    try{ data = await res.json(); }catch(_){}
-    return {res,data};
+    try{
+      const res = await fetch(API_BASE + path, Object.assign({
+        credentials:'include',
+        headers:{'Content-Type':'application/json'}
+      }, opts||{}));
+      let data=null;
+      try{ data = await res.json(); }catch(_){}
+      return {res,data};
+    }catch(err){
+      return {res:null,data:null,error:err};
+    }
   }
 
   async function authMe(){
     const {res,data} = await api('/api/auth/me', {method:'GET'});
-    if (!res.ok || !data || !data.ok || !data.authenticated){
+    if (!res || !res.ok || !data || !data.ok || !data.authenticated){
       return null;
     }
     return data.user || {};
@@ -91,7 +95,7 @@
 
   async function loadApps(){
     const {res,data} = await api('/api/my/apps', {method:'GET'});
-    if (!res.ok || !data || !data.ok) return [];
+    if (!res || !res.ok || !data || !data.ok) return [];
     // worker: {apps:[...]} or {items:[...]}
     return data.apps || data.items || [];
   }
