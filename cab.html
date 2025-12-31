@@ -433,9 +433,8 @@
     me: '/api/auth/me',
     logout: '/api/auth/logout',
     // ниже — типовые эндпоинты для SAAS. Если в воркере они иначе — поменяй тут пути.
-    templatesList: '/api/templates/list',
-    appsList: '/api/apps/list',
-    appCreate: '/api/apps/create'
+    appsList: '/api/my/apps',
+    appCreate: '/api/app'
   };
 
   async function api(path, opts){
@@ -525,7 +524,7 @@
 
     const user = data.user || {};
     const email = user.email || localStorage.getItem('sg_user_email') || 'user@example.com';
-    const verified = !!(user.email_verified ?? user.verified ?? false);
+    const verified = !!(user.email_verified ?? user.is_verified ?? user.verified ?? false);
 
     if (emailEl) emailEl.textContent = email;
     if (avatarEl) avatarEl.textContent = (email[0]||'S').toUpperCase();
@@ -623,14 +622,14 @@
 
   // === CREATE PROJECT (выбор шаблона + имя) ===
   document.getElementById('createProject')?.addEventListener('click',async ()=>{
-    const tplId = await pickTemplate();
-    if (!tplId) return;
+    // templates пока не используем в воркере
+    const tplId = null;
     const name = prompt('Название mini‑app:', 'Новый проект');
     if (!name) return;
 
     const {res,data} = await api(ENDPOINTS.appCreate, {
       method:'POST',
-      body: JSON.stringify({template_id: tplId, title: name})
+      body: JSON.stringify({title: name})
     });
 
     if (!res.ok || !data || !data.ok){
