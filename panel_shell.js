@@ -25,8 +25,9 @@
         return;
       }
     }catch(_){}
-    location.href = target;
-  }catch(_){
+    try{
+      location.href = target;
+    }catch(_){
       location.href = AUTH_URL;
     }
   }
