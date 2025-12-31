@@ -474,6 +474,47 @@ let MODAL_CTX = null; // {path, filter}
     console.warn('[studio] apply remote BP failed', e);
   }
 
+  // === Safety: ensure a minimal editable structure for brand-new apps ===
+  // New apps created in SaaS may start with an empty blueprint (no routes/nav).
+  // Without at least one route, the left editor looks "empty".
+  (function ensureDefaultHomeRoute(){
+    try{
+      BP = BP && typeof BP === 'object' ? BP : {};
+      BP.blocks = BP.blocks && typeof BP.blocks === 'object' ? BP.blocks : {};
+
+      BP.nav = BP.nav && typeof BP.nav === 'object' ? BP.nav : { type:'tabs', position:'bottom', routes:[] };
+      BP.nav.routes = Array.isArray(BP.nav.routes) ? BP.nav.routes : [];
+
+      BP.routes = Array.isArray(BP.routes) ? BP.routes : [];
+
+      // If nav exists but routes are missing, create routes for each nav entry
+      if (BP.nav.routes.length && !BP.routes.length){
+        BP.nav.routes.forEach(t=>{
+          const p = (t && t.path) ? String(t.path) : '/';
+          if (!BP.routes.some(r=>r && r.path===p)) BP.routes.push({ path:p, blocks:[] });
+        });
+      }
+
+      // Absolute minimum: add Home page when nothing exists
+      if (!BP.nav.routes.length && !BP.routes.length){
+        BP.nav.routes.push({
+          path:'/',
+          title:'Главная',
+          icon:'home',
+          icon_g:'⌂',
+          icon_img:'',
+          kind:'home',
+          hidden:false
+        });
+        BP.routes.push({ path:'/', blocks:[] });
+      }
+
+      // Keep CURRENT_PATH sane
+      const firstPath = (BP.nav.routes[0] && BP.nav.routes[0].path) || (BP.routes[0] && BP.routes[0].path) || '/';
+      CURRENT_PATH = firstPath;
+    }catch(_){ }
+  })();
+
   // Reorder via drag in preview is disabled (modal overlaps preview, so it's inconvenient).
   const ENABLE_REORDER = false;
 
