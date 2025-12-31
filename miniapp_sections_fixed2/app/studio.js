@@ -91,6 +91,7 @@ console.log("[studio] build step21");
       const qAppId = qs.get('app_id') || qs.get('app');
       if (qAppId && appIdEl){
         appIdEl.value = qAppId;
+        syncPreviewFrameAppId(qAppId);
       }
     }catch(_){}
   })();
@@ -98,6 +99,20 @@ console.log("[studio] build step21");
   // Текущий appId (что написано в поле). Если пусто – используем '1'.
   function getAppId(){
     return (appIdEl && appIdEl.value.trim()) || '1';
+  }
+
+  // Синхронизируем app_id в preview iframe URL с текущим проектом.
+  // Это убирает "мигание" чужого шаблона (iframe по умолчанию стартует с app_id=my_app).
+  function syncPreviewFrameAppId(appId){
+    try{
+      const fr = document.getElementById('frame');
+      if (!fr) return;
+      const u = new URL(fr.getAttribute('src') || fr.src || '', window.location.href);
+      u.searchParams.set('preview', 'draft');
+      u.searchParams.set('app_id', String(appId||'').trim() || '1');
+      // Важно: не добавляем cache-buster постоянно, иначе превью будет перезагружаться на каждое изменение.
+      fr.src = u.toString();
+    }catch(_){ }
   }
 
   // ====== App switcher (all user's bots/projects) ======
@@ -147,6 +162,8 @@ console.log("[studio] build step21");
 
   // init switcher ASAP
   initAppSwitcher();
+  // и на всякий — синхронизируем preview iframe с текущим appId (если initAppIdFromQuery не сработал)
+  syncPreviewFrameAppId(getAppId());
 
   // Подтянуть конфиг мини-аппа с воркера (если он уже есть).
   // Возвращает data.config или null.
@@ -473,47 +490,6 @@ let MODAL_CTX = null; // {path, filter}
   }catch(e){
     console.warn('[studio] apply remote BP failed', e);
   }
-
-  // === Safety: ensure a minimal editable structure for brand-new apps ===
-  // New apps created in SaaS may start with an empty blueprint (no routes/nav).
-  // Without at least one route, the left editor looks "empty".
-  (function ensureDefaultHomeRoute(){
-    try{
-      BP = BP && typeof BP === 'object' ? BP : {};
-      BP.blocks = BP.blocks && typeof BP.blocks === 'object' ? BP.blocks : {};
-
-      BP.nav = BP.nav && typeof BP.nav === 'object' ? BP.nav : { type:'tabs', position:'bottom', routes:[] };
-      BP.nav.routes = Array.isArray(BP.nav.routes) ? BP.nav.routes : [];
-
-      BP.routes = Array.isArray(BP.routes) ? BP.routes : [];
-
-      // If nav exists but routes are missing, create routes for each nav entry
-      if (BP.nav.routes.length && !BP.routes.length){
-        BP.nav.routes.forEach(t=>{
-          const p = (t && t.path) ? String(t.path) : '/';
-          if (!BP.routes.some(r=>r && r.path===p)) BP.routes.push({ path:p, blocks:[] });
-        });
-      }
-
-      // Absolute minimum: add Home page when nothing exists
-      if (!BP.nav.routes.length && !BP.routes.length){
-        BP.nav.routes.push({
-          path:'/',
-          title:'Главная',
-          icon:'home',
-          icon_g:'⌂',
-          icon_img:'',
-          kind:'home',
-          hidden:false
-        });
-        BP.routes.push({ path:'/', blocks:[] });
-      }
-
-      // Keep CURRENT_PATH sane
-      const firstPath = (BP.nav.routes[0] && BP.nav.routes[0].path) || (BP.routes[0] && BP.routes[0].path) || '/';
-      CURRENT_PATH = firstPath;
-    }catch(_){ }
-  })();
 
   // Reorder via drag in preview is disabled (modal overlaps preview, so it's inconvenient).
   const ENABLE_REORDER = false;
@@ -2414,6 +2390,37 @@ beBody.innerHTML = '';
         reader.readAsDataURL(file);
       });
     }
+
+    // ====== Универсальная привязка полей редактора ======
+    // Раньше для базовых полей (title/text/link/...) слушатели не ставились,
+    // поэтому изменения не попадали в BP и превью не обновлялось.
+    // Теперь: любое поле с data-f обновляет props + триггерит updatePreviewInline.
+    try{
+      beBody.querySelectorAll('input[data-f], textarea[data-f], select[data-f]').forEach(el=>{
+        const f = el.getAttribute('data-f');
+        if (!f) return;
+        // file inputs обрабатываются отдельно
+        if (el.tagName === 'INPUT' && el.type === 'file') return;
+        if (f === 'imgUpload') return;
+
+        const apply = ()=>{
+          pushHistory();
+          if (f === 'items' || f === 'tiles'){
+            const raw = String(el.value || '');
+            props[f] = raw
+              .split(',')
+              .map(s=>s.trim())
+              .filter(Boolean);
+          } else {
+            props[f] = el.value;
+          }
+          updatePreviewInline();
+        };
+
+        el.addEventListener('input', apply);
+        el.addEventListener('change', apply);
+      });
+    }catch(_){ }
 
 
 
