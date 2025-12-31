@@ -2396,8 +2396,8 @@ beBody.innerHTML = '';
     // поэтому изменения не попадали в BP и превью не обновлялось.
     // Теперь: любое поле с data-f обновляет props + триггерит updatePreviewInline.
     try{
-      beBody.querySelectorAll('input[data-f], textarea[data-f], select[data-f]').forEach(el=>{
-        const f = el.getAttribute('data-f');
+      beBody.querySelectorAll('input[data-f], textarea[data-f], select[data-f], input[data-icp-k], textarea[data-icp-k], select[data-icp-k], input[data-icard-k], textarea[data-icard-k], select[data-icard-k], input[data-icardc-k], textarea[data-icardc-k], select[data-icardc-k]').forEach(el=>{
+        const f = el.getAttribute('data-f') || el.getAttribute('data-icp-k') || el.getAttribute('data-icard-k') || el.getAttribute('data-icardc-k');
         if (!f) return;
         // file inputs обрабатываются отдельно
         if (el.tagName === 'INPUT' && el.type === 'file') return;
