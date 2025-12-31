@@ -136,11 +136,18 @@ const META = {
     }, 650);
   });
 
-  // open like screenshot
-  showView('settings');
-  sideNav.querySelectorAll('.side__item').forEach(x=>x.classList.toggle('is-active', x.dataset.view==='settings'));
+  // стартовый view: если в URL есть app/app_id (или view=constructor) — открываем конструктор
+  const sp0 = new URLSearchParams(location.search||'');
+  const urlApp = (sp0.get('app_id') || sp0.get('app') || '').trim();
+  const urlView = (sp0.get('tab') || sp0.get('view') || '').trim();
 
-    // ====== Bot integration (Telegram) ======
+  let startView = 'settings';
+  if (urlView) startView = urlView;
+  if (urlApp && (!urlView || urlView === 'constructor')) startView = 'constructor';
+
+  showView(startView);
+  sideNav.querySelectorAll('.side__item').forEach(x=>x.classList.toggle('is-active', x.dataset.view===startView));
+// ====== Bot integration (Telegram) ======
   const botUsernameInput = document.getElementById('botUsername');
   const botTokenInput = document.getElementById('botToken');
   const botStatusBadge = document.getElementById('botStatusBadge');
