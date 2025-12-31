@@ -689,7 +689,7 @@ function updatePreviewInline(){
   try{ recomputeSectionFlow(getRoute(CURRENT_PATH)); }catch(_){}
   // 1) Пишем текущий BP в localStorage draft — это источник для превью (и резерв, если postMessage не долетит)
   try{
-    const appId = appIdEl.value.trim()||'my_app';
+    const appId = getAppId() || "my_app";
     localStorage.setItem(`bp:${appId}:draft`, JSON.stringify({ version: Date.now(), json: BP }));
   }catch(_){}
 
@@ -4097,7 +4097,7 @@ if (inst.key === 'cta') {
 
   /* ---------- AppId → reload preview query ---------- */
   appIdEl.addEventListener('input', ()=>{
-    const appId = appIdEl.value.trim()||'my_app';
+    const appId = getAppId() || "my_app";
     const u = new URL(frame.src, location.href); u.searchParams.set('app_id', appId); frame.src = u.toString();
   });
 
@@ -4173,7 +4173,7 @@ async function remoteGetBP_(mode, appId){
 
 // Переопределяем saveDraft/publishLive так, чтобы они ещё и пушили на сервер (если настроено).
 function saveDraft(){
-  const appId = appIdEl.value.trim()||'my_app';
+  const appId = getAppId() || "my_app";
   const d = JSON.stringify(BP||{}, null, 0);
   localStorage.setItem(`bp:${appId}:draft`, d);
 
@@ -4183,7 +4183,7 @@ function saveDraft(){
 }
 
 async function publishLive(){
-  const appId = appIdEl.value.trim()||'my_app';
+  const appId = getAppId() || "my_app";
   const d = localStorage.getItem(`bp:${appId}:draft`);
   if(!d){ alert('Сначала сохраните черновик'); return; }
 
