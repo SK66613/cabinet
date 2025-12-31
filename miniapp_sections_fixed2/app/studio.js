@@ -5,6 +5,25 @@ console.log("[studio] build step21");
   const $     = (q,r=document)=>r.querySelector(q);
   const toast = (msg)=>{ try{ console.log('[toast]',msg); }catch(_){} };
   const appIdEl = $('#app_id');
+  // === SaaS embed mode: hide local project selectors, use panel header switcher ===
+  const Q = new URLSearchParams(location.search || '');
+  const EMBED = (Q.get('embed') === '1' || Q.get('embed') === 'true');
+  const Q_APP = (Q.get('app') || Q.get('app_id') || '').trim();
+  if (appIdEl && Q_APP) appIdEl.value = Q_APP;
+  if (EMBED){
+    try{ const row = document.querySelector('.app-id-row'); if (row) row.style.display = 'none'; }catch(_){ }
+    try{ const sw = document.querySelector('.appSwitchBox'); if (sw) sw.style.display = 'none'; }catch(_){ }
+  }
+  // If panel header changes app, reload constructor data
+  window.addEventListener('sg:appchange', (e)=>{
+    try{
+      const id = e && e.detail && e.detail.appId;
+      if (!id) return;
+      if (appIdEl) appIdEl.value = id;
+      if (typeof loadAll === 'function') loadAll();
+    }catch(_){ }
+  });
+
   // === SaaS embed sync (use global header switcher in panel) ===
   try{
     const Q = new URLSearchParams(location.search||'');
