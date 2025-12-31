@@ -655,17 +655,26 @@
   // === CREATE PROJECT (выбор шаблона + имя) ===
   document.getElementById('createProject')?.addEventListener('click',async ()=>{
     // templates пока не используем в воркере
-    const tplId = 'beer_club'; // default template
-    // TODO: заменить на выбор в модалке: /api/templates
+    const tplId = null;
     const name = prompt('Название mini‑app:', 'Новый проект');
     if (!name || !name.trim()) return;
 
-    const {res,data} = await api(ENDPOINTS.appCreate, {
-      method:'POST',
-      body: JSON.stringify({title: name.trim(), slug: slugifyRu(name), template_id: tplId})
-    });
+    let attemptSlug = slugifyRu(name);
+    let res=null, data=null;
+    for (let i=0;i<5;i++){
+      ({res,data} = await api(ENDPOINTS.appCreate, {
+        method:'POST',
+        body: JSON.stringify({title: name.trim(), slug: attemptSlug, template_id: null})
+      }));
+      if (res.ok && data && data.ok) break;
+      if (data && data.error === 'APP_ALREADY_EXISTS'){
+        attemptSlug = attemptSlug + '-' + Math.random().toString(36).slice(2,6);
+        continue;
+      }
+      break;
+    }
 
-    if (!res.ok || !data || !data.ok){
+    if (!res || !res.ok || !data || !data.ok){
       const err = (data && data.error) ? data.error : ('HTTP '+res.status);
       alert('Не удалось создать проект: ' + err + '\nПроверь путь ENDPOINTS.appCreate и формат body.');
       return;
