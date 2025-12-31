@@ -24,43 +24,7 @@ console.log("[studio] build step21");
     }catch(_){ }
   });
 
-  // === SaaS embed sync (use global header switcher in panel) ===
-  try{
-    const Q = new URLSearchParams(location.search||'');
-    const EMBED = Q.get('embed') === '1' || Q.get('embed') === 'true';
-    const Q_APP = Q.get('app') || Q.get('app_id') || '';
-    if (appIdEl && Q_APP) appIdEl.value = Q_APP;
-    if (EMBED){
-      // hide local app selector row if present
-      try{
-        if (appIdEl){
-          const box = appIdEl.closest('.appIdBox') || appIdEl.closest('.row') || appIdEl.parentElement;
-          if (box) box.style.display = 'none';
-          else appIdEl.style.display = 'none';
-        }
-      }catch(_){ }
-    }
-    // parent panel will dispatch sg:appchange; reload app data + preview
-    window.addEventListener('sg:appchange', (e)=>{
-      try{
-        const id = e && e.detail && e.detail.appId;
-        if (!id) return;
-        if (appIdEl) appIdEl.value = id;
-        // reuse existing loader
-        if (typeof loadAll === 'function'){ loadAll(); }
-      }catch(_){ }
-    });
-  }catch(_){ }
-  const Q = new URLSearchParams(location.search||'');
-  const EMBED = Q.get('embed') === '1' || Q.get('embed') === 'true';
-  const Q_APP = Q.get('app') || Q.get('app_id') || '';
-  if (appIdEl && Q_APP) appIdEl.value = Q_APP;
-  // if running inside panel, hide local app switcher (use global header switcher)
-  try{ if (EMBED){ const el = document.getElementById('appSwitch'); if(el) el.closest('.appSwitchBox') ? (el.closest('.appSwitchBox').style.display='none') : (el.style.display='none'); } }catch(_){ }
-  // keep in sync if parent shell changes current app
-  window.addEventListener('sg:appchange', (e)=>{
-    try{ const id = e && e.detail && e.detail.appId; if(id && appIdEl){ appIdEl.value = id; } }catch(_){ }
-  });
+  // (cleanup) removed duplicate embed init blocks — они ломали парсинг ("Identifier 'Q' has already been declared")
   const appSwitchEl = $('#appSwitch');
   const ctxMenu = $('#ctxMenu');
   const navList = $('#nav_list');
@@ -395,12 +359,21 @@ console.log("[studio] build step21");
   const panelHide = $('#panelHide');
   const navEar  = $('#navEar');
 
-  // In embedded mode the left studio panel should start hidden under the host sidebar.
+  // Embedded mode: by default we KEEP the left panel OPEN (so you don't get a blank area).
+  // If you need стартовать свернутым — передай ?start_collapsed=1 в URL iframe.
   try{
     if (appRoot && document.documentElement.classList.contains('embed-seamless')){
-      appRoot.classList.add('nav-collapsed');
-      if (panelHide) panelHide.textContent = '⮞';
-      if (navEar) navEar.textContent = '⮞';
+      const qs = new URLSearchParams(location.search||'');
+      const startCollapsed = (qs.get('start_collapsed') === '1' || qs.get('start_collapsed') === 'true');
+      if (startCollapsed){
+        appRoot.classList.add('nav-collapsed');
+        if (panelHide) panelHide.textContent = '⮞';
+        if (navEar) navEar.textContent = '⮞';
+      }else{
+        appRoot.classList.remove('nav-collapsed');
+        if (panelHide) panelHide.textContent = '⮜';
+        if (navEar) navEar.textContent = '⮜';
+      }
     }
   }catch(_){ }
 
