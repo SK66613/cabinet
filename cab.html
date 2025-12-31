@@ -613,6 +613,36 @@
     return String(s??'').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   }
 
+  // === SLUGIFY (ru/en) ===
+  // Воркер хранит apps.id как TEXT-слуг и принимает только [a-z0-9_].
+  // Чтобы проекты создавались даже с русскими названиями — делаем транслит на фронте.
+  function slugifyRu(input, maxLen=48){
+    const s = String(input||'').trim().toLowerCase();
+
+    const map = {
+      'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'e','ж':'zh','з':'z','и':'i','й':'y',
+      'к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f',
+      'х':'h','ц':'ts','ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya'
+    };
+
+    let out = '';
+    for (const ch of s){
+      out += (map[ch] ?? ch);
+    }
+
+    out = out
+      .replace(/[^a-z0-9]+/g,'_')
+      .replace(/^_+|_+$/g,'')
+      .slice(0, maxLen);
+
+    // если название совсем «без латиницы» — делаем безопасный id
+    if (!out){
+      out = 'app_' + Date.now().toString(36);
+    }
+    return out;
+  }
+
+
   // === SEARCH по карточкам ===
   document.getElementById('q').addEventListener('input',e=>{
     const s=e.target.value.toLowerCase();
@@ -627,11 +657,11 @@
     // templates пока не используем в воркере
     const tplId = null;
     const name = prompt('Название mini‑app:', 'Новый проект');
-    if (!name) return;
+    if (!name || !name.trim()) return;
 
     const {res,data} = await api(ENDPOINTS.appCreate, {
       method:'POST',
-      body: JSON.stringify({title: name})
+      body: JSON.stringify({title: name.trim(), slug: slugifyRu(name)})
     });
 
     if (!res.ok || !data || !data.ok){
