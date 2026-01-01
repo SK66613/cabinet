@@ -173,14 +173,16 @@ const META = {
     try{
       const r = await fetch(
         CAB_API_BASE + '/api/app/' + encodeURIComponent(CAB_APP_ID) + '/bot',
-        { method:'GET' }
+        { method:'GET', credentials:'include' }
       );
       if (!r.ok) throw new Error('HTTP ' + r.status);
       const data = await r.json().catch(()=>null);
 
       if (data && data.ok){
-        if (botUsernameInput && data.bot_username){
-          botUsernameInput.value = data.bot_username;
+        // worker may return either bot_username (legacy) or username (current)
+        const u = String(data.bot_username || data.username || '').trim();
+        if (botUsernameInput){
+          botUsernameInput.value = u;
         }
         if (botStatusBadge){
           const linked = !!data.linked;
@@ -213,9 +215,11 @@ const META = {
         {
           method:'PUT',
           headers:{ 'Content-Type': 'application/json' },
+          credentials:'include',
           body: JSON.stringify({
-            bot_username: username || null,
-            bot_token:    token    || null   // пустая строка = не меняем токен
+            // worker expects username/token (legacy panel used bot_username/bot_token)
+            username: username || null,
+            token:    token    || null   // пустая строка = не меняем токен
           })
         }
       );
