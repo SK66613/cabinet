@@ -435,7 +435,8 @@
     logout: '/api/auth/logout',
     // ниже — типовые эндпоинты для SAAS. Если в воркере они иначе — поменяй тут пути.
     appsList: '/api/my/apps',
-    appCreate: '/api/app'
+    appCreate: '/api/app',
+    templatesList: '/api/templates'
   };
 
   async function api(path, opts){
@@ -586,27 +587,40 @@
           <button class="btn primary" data-act="edit">Редактировать</button>
         </div>
         <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
-          <button class="btn" data-act="open">Открыть</button>
-          <button class="btn" data-act="settings">Настройки</button>
+          <button class="btn" data-act="delete" style="border-color:rgba(239,68,68,.35);color:#ef4444">Удалить</button>
         </div>
       `;
       c.querySelectorAll('button[data-act]').forEach(b=>{
         b.addEventListener('click',(e)=>{
           e.stopPropagation();
           const act = b.getAttribute('data-act');
-          if (act==='edit' || act==='open'){
+          if (act==='edit'){
             // переход в конструктор именно этого mini‑app
             // IMPORTANT: URL конструктора
             const appId = app.app_id || app.id || slug;
             window.location.href = `panel.html?view=constructor&app=${encodeURIComponent(appId)}`;
           }
-          if (act==='settings'){
-            alert('Настройки проекта: подключим позже (бот, домен, доступы).');
+          if (act==='delete'){
+            const appId = app.app_id || app.id || slug;
+            doDeleteApp(appId, title);
           }
         });
       });
       projectsGrid.appendChild(c);
     });
+  }
+
+  async function doDeleteApp(appId, title){
+    if (!appId) return;
+    const ok = confirm(`Удалить проект “${title}”?\nЭто удалит конфиг из D1 и KV.`);
+    if (!ok) return;
+    const {res,data} = await api(`/api/app/${encodeURIComponent(appId)}`, { method:'DELETE' });
+    if (!res.ok || !data || !data.ok){
+      const err = (data && data.error) ? data.error : ('HTTP ' + res.status);
+      alert('Не удалось удалить проект: ' + err);
+      return;
+    }
+    await loadApps();
   }
 
   function escapeHtml(s){
@@ -652,62 +666,134 @@
     });
   });
 
-  // === CREATE PROJECT (выбор шаблона + имя) ===
-  document.getElementById('createProject')?.addEventListener('click',async ()=>{
-    // templates пока не используем в воркере
-    const tplId = null;
-    const name = prompt('Название mini‑app:', 'Новый проект');
-    if (!name || !name.trim()) return;
+  // === CREATE PROJECT (модалка: шаблон + имя) ===
+  let createModal;
+  function ensureCreateModal(){
+    if (createModal) return createModal;
 
-    let attemptSlug = slugifyRu(name);
-    let res=null, data=null;
-    for (let i=0;i<5;i++){
-      ({res,data} = await api(ENDPOINTS.appCreate, {
-        method:'POST',
-        body: JSON.stringify({title: name.trim(), slug: attemptSlug, template_id: null})
-      }));
-      if (res.ok && data && data.ok) break;
-      if (data && data.error === 'APP_ALREADY_EXISTS'){
-        attemptSlug = attemptSlug + '-' + Math.random().toString(36).slice(2,6);
-        continue;
+    const wrap = document.createElement('div');
+    wrap.id = 'createModal';
+    wrap.style.cssText = `position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:2000;`;
+
+    wrap.innerHTML = `
+      <div class="m-backdrop" style="position:absolute;inset:0;background:rgba(2,6,23,.55);backdrop-filter:blur(6px)"></div>
+      <div class="m-card" style="position:relative;width:min(920px,92vw);max-height:86vh;overflow:auto;background:var(--bg-card);border:1px solid var(--border);border-radius:22px;box-shadow:var(--shadow);padding:18px 18px 16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+          <div>
+            <b style="font-size:18px">Создать mini‑app</b>
+            <div style="color:var(--text-muted);font-size:13px;margin-top:4px">Выбери шаблон и задай название проекта</div>
+          </div>
+          <button class="btn" data-act="close">Закрыть</button>
+        </div>
+
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:14px;align-items:flex-end">
+          <div style="flex:1;min-width:240px">
+            <div style="font-size:12px;color:var(--text-muted);margin:0 0 6px">Название</div>
+            <input id="cm_name" placeholder="Новый проект" style="width:100%;padding:12px 12px;border-radius:14px;border:1px solid var(--border);background:rgba(255,255,255,.72);outline:none" />
+          </div>
+          <div style="min-width:220px">
+            <div style="font-size:12px;color:var(--text-muted);margin:0 0 6px">Slug (id)</div>
+            <input id="cm_slug" placeholder="auto" style="width:100%;padding:12px 12px;border-radius:14px;border:1px solid var(--border);background:rgba(255,255,255,.72);outline:none" />
+          </div>
+        </div>
+
+        <div style="margin-top:14px">
+          <div style="font-size:12px;color:var(--text-muted);margin:0 0 10px">Шаблоны</div>
+          <div id="cm_templates" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px"></div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px">
+          <button class="btn" data-act="cancel">Отмена</button>
+          <button class="btn primary" data-act="create">Создать</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(wrap);
+    const close = ()=>{ wrap.style.display='none'; };
+    wrap.querySelector('[data-act="close"]').addEventListener('click', close);
+    wrap.querySelector('[data-act="cancel"]').addEventListener('click', close);
+    wrap.querySelector('.m-backdrop').addEventListener('click', close);
+
+    // live slug
+    const nameEl = wrap.querySelector('#cm_name');
+    const slugEl = wrap.querySelector('#cm_slug');
+    nameEl.addEventListener('input', ()=>{
+      if (!slugEl.dataset.touched){
+        slugEl.value = slugifyRu(nameEl.value);
       }
-      break;
-    }
+    });
+    slugEl.addEventListener('input', ()=>{ slugEl.dataset.touched='1'; });
 
-    if (!res || !res.ok || !data || !data.ok){
-      const err = (data && data.error) ? data.error : ('HTTP '+res.status);
-      alert('Не удалось создать проект: ' + err + '\nПроверь путь ENDPOINTS.appCreate и формат body.');
-      return;
-    }
-
-    // после создания — обновляем список и открываем конструктор
-    await loadApps();
-    const appId = (data.app && (data.app.app_id||data.app.id)) || data.app_id || data.id;
-    if (appId){
-      window.location.href = `panel.html?view=constructor&app=${encodeURIComponent(appId)}`;
-    }
-  });
-
-  async function pickTemplate(){
-    // лёгкий выбор без ломания верстки: prompt-список.
-    // позже заменим на красивую модалку в стиле кабинета.
-    const {res,data} = await api(ENDPOINTS.templatesList, {method:'GET'});
-    if (!res.ok || !data || !data.ok){
-      const err = (data && data.error) ? data.error : ('HTTP '+res.status);
-      alert('Не удалось загрузить шаблоны: ' + err + '\nПроверь путь ENDPOINTS.templatesList.');
-      return null;
-    }
-    const items = data.items || data.templates || [];
-    if (!items.length){
-      alert('Шаблонов пока нет.');
-      return null;
-    }
-    const lines = items.map((t,i)=> `${i+1}. ${t.title||t.name||t.id} (${t.id})`);
-    const pick = prompt('Выбери шаблон (номер):\n' + lines.join('\n'), '1');
-    const idx = Number(pick||'')-1;
-    if (Number.isNaN(idx) || idx<0 || idx>=items.length) return null;
-    return items[idx].id || items[idx].template_id || items[idx].key;
+    createModal = wrap;
+    return createModal;
   }
+
+  async function openCreateModal(){
+    const m = ensureCreateModal();
+    const nameEl = m.querySelector('#cm_name');
+    const slugEl = m.querySelector('#cm_slug');
+    const listEl = m.querySelector('#cm_templates');
+
+    nameEl.value = 'Новый проект';
+    slugEl.value = '';
+    slugEl.dataset.touched = '';
+    listEl.innerHTML = `<div style="color:var(--text-muted)">Загрузка…</div>`;
+
+    let templates = [];
+    const {res,data} = await api(ENDPOINTS.templatesList, {method:'GET'});
+    if (res.ok && data && data.ok) {
+      templates = data.items || data.templates || [];
+    }
+    if (!templates.length){
+      templates = [{id:'blank',title:'Пустой',desc:'Чистый проект'}];
+    }
+
+    let selId = templates[0].id;
+    const renderTemplates = ()=>{
+      listEl.innerHTML = '';
+      templates.forEach(t=>{
+        const it = document.createElement('button');
+        it.type='button';
+        it.className = 'btn';
+        it.style.cssText = `text-align:left;padding:14px;border-radius:16px;min-height:74px;display:flex;flex-direction:column;gap:6px;${selId===t.id?'border-color:rgba(34,211,238,.65);box-shadow:0 0 0 3px rgba(34,211,238,.12)':''}`;
+        it.innerHTML = `<b style="font-size:14px">${escapeHtml(t.title||t.name||t.id)}</b><span style="color:var(--text-muted);font-size:12px">${escapeHtml(t.desc||'')}</span>`;
+        it.addEventListener('click',()=>{ selId = t.id; renderTemplates(); });
+        listEl.appendChild(it);
+      });
+    };
+    renderTemplates();
+
+    // create
+    const createBtn = m.querySelector('[data-act="create"]');
+    createBtn.onclick = async ()=>{
+      const name = (nameEl.value || '').trim();
+      if (!name) return;
+      const slug = (slugEl.value || '').trim() || slugifyRu(name);
+
+      const {res,data} = await api(ENDPOINTS.appCreate, {
+        method:'POST',
+        body: JSON.stringify({ title:name, slug, template_id: selId })
+      });
+
+      if (!res.ok || !data || !data.ok){
+        const err = (data && data.error) ? data.error : ('HTTP '+res.status);
+        alert('Не удалось создать проект: ' + err);
+        return;
+      }
+
+      m.style.display='none';
+      await loadApps();
+      const appId = (data.app && (data.app.app_id||data.app.id)) || data.app_id || data.id;
+      if (appId){
+        window.location.href = `panel.html?view=constructor&app=${encodeURIComponent(appId)}`;
+      }
+    };
+
+    m.style.display='flex';
+  }
+
+  document.getElementById('createProject')?.addEventListener('click', openCreateModal);
 
   // === LOGOUT ===
   async function doLogout(){
