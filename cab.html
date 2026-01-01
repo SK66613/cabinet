@@ -73,7 +73,10 @@
       background:#fff;
       font-size:13px;
     }
-    .btn.primary{
+    .btn.danger{background:#ef4444;border-color:rgba(239,68,68,.55);color:#fff}
+  .btn.danger:hover{filter:brightness(1.02)}
+
+  .btn.primary{
       background:linear-gradient(135deg,#22d3ee,#3b82f6);color:#001018;border:none
     }
 
@@ -346,7 +349,79 @@
     @media (max-width: 720px){
       .verify-pill{display:none;} /* на мобиле можно скрыть, чтобы не ломало шапку */
     }
-  </style>
+  
+/* ===== Modal ===== */
+.modalOverlay{
+  position:fixed;inset:0;z-index:9999;
+  background:rgba(3,7,18,.55);
+  backdrop-filter:blur(6px);
+  display:flex;align-items:center;justify-content:center;
+  padding:18px;
+}
+.modalCard{
+  width:min(860px, 96vw);
+  background:rgba(15,23,42,.96);
+  border:1px solid rgba(148,163,184,.22);
+  border-radius:18px;
+  box-shadow:0 30px 80px rgba(0,0,0,.45);
+  overflow:hidden;
+}
+.modalHead{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+  padding:16px 16px 12px;
+  border-bottom:1px solid rgba(148,163,184,.12);
+}
+.modalTitle{font-size:18px;font-weight:800}
+.modalSub{font-size:12px;color:var(--text-muted);margin-top:4px}
+.iconBtn{
+  width:34px;height:34px;border-radius:10px;
+  border:1px solid rgba(148,163,184,.18);
+  background:rgba(255,255,255,.06);
+  color:var(--text);
+  cursor:pointer;
+}
+.modalBody{padding:14px 16px 8px}
+.modalFoot{
+  padding:12px 16px 16px;
+  display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;
+}
+.cmRow{display:flex;flex-direction:column;gap:8px}
+.cmLabel{font-size:12px;color:var(--text-muted)}
+.cmInput{
+  height:42px;border-radius:12px;
+  border:1px solid rgba(148,163,184,.18);
+  background:rgba(255,255,255,.06);
+  padding:0 12px;
+  color:var(--text);
+  outline:none;
+}
+.cmInput:focus{border-color:rgba(34,211,238,.55);box-shadow:0 0 0 3px rgba(34,211,238,.14)}
+.tplGrid{
+  display:grid;
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+  gap:10px;
+  margin-top:10px;
+}
+@media (max-width:900px){ .tplGrid{grid-template-columns:repeat(2, minmax(0, 1fr));} }
+@media (max-width:560px){ .tplGrid{grid-template-columns:1fr;} }
+
+.tplCard{
+  border-radius:14px;
+  border:1px solid rgba(148,163,184,.18);
+  background:rgba(255,255,255,.05);
+  padding:12px;
+  cursor:pointer;
+  transition:transform .08s ease, border-color .12s ease, background .12s ease;
+  min-height:96px;
+  display:flex;flex-direction:column;gap:6px;
+}
+.tplCard:hover{transform:translateY(-1px);border-color:rgba(34,211,238,.38)}
+.tplCard.sel{border-color:rgba(34,211,238,.75);background:rgba(34,211,238,.10)}
+.tplName{font-weight:800;font-size:14px}
+.tplDesc{color:var(--text-muted);font-size:12px;line-height:1.35}
+.tplTag{margin-top:auto;font-size:11px;color:var(--text-muted)}
+
+</style>
 </head>
 <body>
 <header class="sg-topbar sg-topbar--landing">
@@ -435,7 +510,8 @@
     logout: '/api/auth/logout',
     // ниже — типовые эндпоинты для SAAS. Если в воркере они иначе — поменяй тут пути.
     appsList: '/api/my/apps',
-    appCreate: '/api/app'
+    appCreate: '/api/app',
+    templates: '/api/templates'
   };
 
   async function api(path, opts){
@@ -583,7 +659,10 @@
             <p style="color:var(--text-muted);margin:8px 0 0">${escapeHtml(slug)}</p>
             ${updated ? `<p style="color:var(--text-muted);margin:6px 0 0;font-size:12px">Обновлено: ${escapeHtml(updated)}</p>`:''}
           </div>
-          <button class="btn primary" data-act="edit">Редактировать</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+            <button class="btn danger" data-act="delete">Удалить</button>
+            <button class="btn primary" data-act="edit">Редактировать</button>
+          </div>
         </div>
         <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
           <button class="btn" data-act="open">Открыть</button>
@@ -591,19 +670,41 @@
         </div>
       `;
       c.querySelectorAll('button[data-act]').forEach(b=>{
-        b.addEventListener('click',(e)=>{
+        b.addEventListener('click',async (e)=>{
           e.stopPropagation();
           const act = b.getAttribute('data-act');
+
+          const appId = app.app_id || app.id || slug;
+
           if (act==='edit' || act==='open'){
             // переход в конструктор именно этого mini‑app
-            // IMPORTANT: URL конструктора
-            const appId = app.app_id || app.id || slug;
             window.location.href = `panel.html?view=constructor&app=${encodeURIComponent(appId)}`;
+            return;
           }
+
+          if (act==='delete'){
+            const ok = confirm(`Удалить проект "${title}"?
+Это удалит проект и его конфиг.`);
+            if(!ok) return;
+            try{
+              const {res, data} = await api(`${ENDPOINTS.appCreate}/${encodeURIComponent(appId)}`, { method:'DELETE' });
+              if (!res.ok || !data || !data.ok){
+                const err = data?.error || ('HTTP '+res.status);
+                alert('Не удалось удалить: ' + err);
+                return;
+              }
+              await loadMyApps();
+            }catch(e){
+              alert('Не удалось удалить: ' + (e?.message || e));
+            }
+            return;
+          }
+
           if (act==='settings'){
             alert('Настройки проекта: подключим позже (бот, домен, доступы).');
+            return;
           }
-        });
+});
       });
       projectsGrid.appendChild(c);
     });
@@ -653,28 +754,129 @@
   });
 
   // === CREATE PROJECT (выбор шаблона + имя) ===
-  document.getElementById('createProject')?.addEventListener('click',async ()=>{
-    // templates пока не используем в воркере
-    const tplId = null;
-    const name = prompt('Название mini‑app:', 'Новый проект');
-    if (!name || !name.trim()) return;
+  
+  // === CREATE PROJECT (модалка: выбор шаблона + имя) ===
+  const CM = {
+    el: document.getElementById('createModal'),
+    close: document.getElementById('cmClose'),
+    cancel: document.getElementById('cmCancel'),
+    create: document.getElementById('cmCreate'),
+    name: document.getElementById('cmName'),
+    grid: document.getElementById('cmTplGrid'),
+    hint: document.getElementById('cmTplHint'),
+  };
+  let CM_TPLS = [];
+  let CM_SEL  = null;
 
-    let attemptSlug = slugifyRu(name);
-    let res=null, data=null;
-    for (let i=0;i<5;i++){
-      ({res,data} = await api(ENDPOINTS.appCreate, {
-        method:'POST',
-        body: JSON.stringify({title: name.trim(), slug: attemptSlug, template_id: null})
-      }));
-      if (res.ok && data && data.ok) break;
-      if (data && data.error === 'APP_ALREADY_EXISTS'){
-        attemptSlug = attemptSlug + '-' + Math.random().toString(36).slice(2,6);
-        continue;
-      }
-      break;
+  function cmOpen(){
+    if (!CM.el) return;
+    CM.el.style.display = '';
+    CM.name.value = 'Новый проект';
+    CM.name.focus();
+    CM_SEL = null;
+    cmLoadTemplates();
+  }
+  function cmClose(){
+    if (!CM.el) return;
+    CM.el.style.display = 'none';
+  }
+  CM.close?.addEventListener('click', cmClose);
+  CM.cancel?.addEventListener('click', cmClose);
+  CM.el?.addEventListener('click', (e)=>{ if (e.target === CM.el) cmClose(); });
+  document.addEventListener('keydown', (e)=>{ if (e.key === 'Escape' && CM.el?.style.display !== 'none') cmClose(); });
+
+  async function cmLoadTemplates(){
+    CM.hint.textContent = 'Загружаю шаблоны…';
+    let tpls = null;
+    try{
+      const {res, data} = await api(ENDPOINTS.templates, { method:'GET' });
+      if (res.ok && data && data.ok && Array.isArray(data.items)) tpls = data.items;
+    }catch(e){}
+    if (!tpls){
+      // fallback (если воркер ещё без /api/templates)
+      tpls = [
+        {id:'beer_club', title:'Beer Club', desc:'Лояльность: штампы, колесо, игры', tag:'Ритейл'},
+        {id:'coffee_loyalty', title:'Coffee Loyalty', desc:'Карты, бонусы, акции, карта точек', tag:'Кофе'},
+        {id:'quiz_lead', title:'Quiz Lead', desc:'Квиз‑воронка + лид‑форма', tag:'Лиды'},
+        {id:'blank', title:'Пустой', desc:'Чистый проект без блоков', tag:'Blank'},
+      ];
     }
+    CM_TPLS = tpls;
+    CM.hint.textContent = 'Выбери один шаблон';
+    cmRenderTpls();
+  }
 
-    if (!res || !res.ok || !data || !data.ok){
+  function cmRenderTpls(){
+    if (!CM.grid) return;
+    CM.grid.innerHTML = '';
+    CM_TPLS.forEach(t=>{
+      const card = document.createElement('div');
+      card.className = 'tplCard' + (CM_SEL === t.id ? ' sel' : '');
+      card.innerHTML = `
+        <div class="tplName">${escapeHtml(t.title || t.id)}</div>
+        <div class="tplDesc">${escapeHtml(t.desc || '')}</div>
+        <div class="tplTag">${escapeHtml(t.tag || '')}</div>
+      `;
+      card.addEventListener('click', ()=>{
+        CM_SEL = t.id;
+        cmRenderTpls();
+      });
+      CM.grid.appendChild(card);
+    });
+    // авто-выбор первого
+    if (!CM_SEL && CM_TPLS[0]?.id){
+      CM_SEL = CM_TPLS[0].id;
+      cmRenderTpls();
+    }
+  }
+
+  async function createAppWithRetry(payload){
+    // если воркер вернул APP_ALREADY_EXISTS — добавим суффикс и попробуем ещё
+    const baseSlug = payload.slug;
+    for (let i=0;i<5;i++){
+      const p = {...payload};
+      if (i>0) p.slug = baseSlug + '-' + Math.random().toString(36).slice(2,6);
+      const {res, data} = await api(ENDPOINTS.appCreate, { method:'POST', body: JSON.stringify(p) });
+      if (res.ok && data && data.ok) return data;
+      const err = data?.error || ('HTTP '+res.status);
+      if (err !== 'APP_ALREADY_EXISTS') throw new Error(err);
+    }
+    throw new Error('APP_ALREADY_EXISTS');
+  }
+
+  CM.create?.addEventListener('click', async ()=>{
+    const name = (CM.name.value || '').trim();
+    if (!name) return;
+
+    const payload = {
+      title: name,
+      slug: slugifyRu(name),
+      template_id: CM_SEL || 'beer_club',
+    };
+
+    CM.create.disabled = true;
+    CM.create.textContent = 'Создаю…';
+
+    try{
+      const data = await createAppWithRetry(payload);
+      cmClose();
+      await loadMyApps();
+      // сразу в конструктор
+      location.href = 'panel.html?app=' + encodeURIComponent(data.id) + '&tab=constructor';
+    }catch(e){
+      alert('Не удалось создать проект: ' + (e?.message || e));
+    }finally{
+      CM.create.disabled = false;
+      CM.create.textContent = 'Создать';
+    }
+  });
+
+  document.getElementById('createProject')?.addEventListener('click', ()=>{
+    cmOpen();
+  });
+
+
+    if (!res.ok || !data || !data.ok){
       const err = (data && data.error) ? data.error : ('HTTP '+res.status);
       alert('Не удалось создать проект: ' + err + '\nПроверь путь ENDPOINTS.appCreate и формат body.');
       return;
@@ -733,5 +935,39 @@
 })();
 </script>
   <script src="panel_shell.js"></script>
+
+<!-- Create Project Modal -->
+<div id="createModal" class="modalOverlay" style="display:none">
+  <div class="modalCard" role="dialog" aria-modal="true" aria-labelledby="cmTitle">
+    <div class="modalHead">
+      <div>
+        <div id="cmTitle" class="modalTitle">Создать mini‑app</div>
+        <div class="modalSub">Выбери шаблон и задай название проекта.</div>
+      </div>
+      <button class="iconBtn" id="cmClose" title="Закрыть">✕</button>
+    </div>
+
+    <div class="modalBody">
+      <div class="cmRow">
+        <label class="cmLabel">Название</label>
+        <input id="cmName" class="cmInput" placeholder="Например: Бизнес‑квест" />
+      </div>
+
+      <div class="cmRow" style="margin-top:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+          <label class="cmLabel" style="margin:0">Шаблон</label>
+          <div id="cmTplHint" style="font-size:12px;color:var(--text-muted)"></div>
+        </div>
+        <div id="cmTplGrid" class="tplGrid"></div>
+      </div>
+    </div>
+
+    <div class="modalFoot">
+      <button class="btn" id="cmCancel">Отмена</button>
+      <button class="btn primary" id="cmCreate">Создать</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
